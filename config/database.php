@@ -2,11 +2,12 @@
 
 class Database {
     private static $instance = null;
-    private $pdo;
+    private $conexion;
 
     private function __construct() {
-        $env = $this->loadEnv();
 
+        $env = $this->loadEnv();
+        
         $host = $env['DB_HOST'] ?? 'localhost';
         $port = $env['DB_PORT'] ?? '3306';
         $db   = $env['DB_NAME'] ?? '';
@@ -16,7 +17,7 @@ class Database {
         $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4";
 
         try {
-            $this->pdo = new PDO($dsn, $user, $pass, [
+            $this->conexion = new PDO($dsn, $user, $pass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false
@@ -31,7 +32,7 @@ class Database {
             self::$instance = new Database();
         }
 
-        return self::$instance->pdo;
+        return self::$instance->conexion;
     }
 
     private function loadEnv() {
@@ -41,7 +42,7 @@ class Database {
         }
     
         $vars = parse_ini_file($path);
-        var_dump($vars); // ← esto te mostrará si el archivo se lee correctamente
+        //var_dump($vars); con este comando vemos en el navegador el valor de las variables
         return $vars;
     }
 
