@@ -19,15 +19,32 @@ class Level {
         return $consulta->fetch();
     }
 
-    public function crear($nombreNivel) {
-        $consulta = $this->conexion->prepare("INSERT INTO levels (level_name) VALUES (?)");
-        return $consulta->execute([$nombreNivel]);
+    public function crear($datos) {
+        $campos = array_keys($datos);
+        $placeholders = array_fill(0, count($datos), '?');
+        $valores = array_values($datos);
+    
+        $sql = "INSERT INTO levels (" . implode(',', $campos) . ") VALUES (" . implode(',', $placeholders) . ")";
+        $consulta = $this->conexion->prepare($sql);
+        return $consulta->execute($valores);
     }
 
-    public function actualizar($id, $nombreNivel) {
-        $consulta = $this->conexion->prepare("UPDATE levels SET level_name = ? WHERE id = ?");
-        return $consulta->execute([$nombreNivel, $id]);
+    public function actualizar($id, $datos) {
+        $campos = [];
+        $valores = [];
+    
+        foreach ($datos as $campo => $valor) {
+            $campos[] = "$campo = ?";
+            $valores[] = $valor;
+        }
+    
+        $valores[] = $id; // El ID va al final para el WHERE
+    
+        $sql = "UPDATE levels SET " . implode(", ", $campos) . " WHERE id = ?";
+        $consulta = $this->conexion->prepare($sql);
+        return $consulta->execute($valores);
     }
+    
 
     public function eliminar($id) {
         $consulta = $this->conexion->prepare("DELETE FROM levels WHERE id = ?");
