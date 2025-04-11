@@ -19,7 +19,7 @@ $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'];
 
 //Con este codigo vemos los valores de las variables en el navegador.
-var_dump($uri);
+//var_dump($uri);
 
 //Finalmente ocupamos el Route, para dirigir al endpoint con su método.
 //Con el operador de resolución de ámbito, no es necesario instanciar la clase Route.
