@@ -1,48 +1,128 @@
 <?php
 
-class Route {
+class Route
+{
+    // Arreglo estático que guarda todas las rutas registradas, agrupadas por método HTTP
     private static $routes = [];
 
-    public static function get($uri, $action)    { self::add('GET', $uri, $action); }
-    public static function post($uri, $action)   { self::add('POST', $uri, $action); }
-    public static function put($uri, $action)    { self::add('PUT', $uri, $action); }
-    public static function delete($uri, $action) { self::add('DELETE', $uri, $action); }
+    /**
+     * Registra una ruta GET
+     * $uri - Ruta del endpoint
+     * $action - Controlador y método estático asociado al endpoint
+     */
+    public static function get($uri, $action)
+    {
+        self::add('GET', $uri, $action);
+    }
 
-    private static function add($method, $uri, $action) {
-        // Convertir /level/getOne/{id} → regex para extraer el parámetro
-        $pattern = preg_replace('/\{[a-zA-Z_][a-zA-Z0-9_]*\}/', '([^/]+)', $uri);
-        $pattern = "#^" . rtrim($pattern, '/') . "$#";
 
+    /**
+     * Registra una ruta POST
+     * $uri - Ruta del endpoint
+     * $action - Controlador y método estático asociado al endpoint
+     */
+    public static function post($uri, $action)
+    {
+        self::add('POST', $uri, $action);
+    }
+
+
+    /**
+     * Registra una ruta PUT
+     * $uri - Ruta del endpoint
+     * $action - Controlador y método estático asociado al endpoint
+     */
+    public static function put($uri, $action)
+    {
+        self::add('PUT', $uri, $action);
+    }
+
+
+    /**
+     * Registra una ruta DELETE
+     * $uri - Ruta del endpoint
+     * $action - Controlador y método estático asociado al endpoint
+     */
+    public static function delete($uri, $action)
+    {
+        self::add('DELETE', $uri, $action);
+    }
+
+
+    private static function add($method, $uri, $action)
+    {
+        // Convierte parámetros dinámicos como {id} en expresiones regulares que capturan valores
+        // Explicación del patrón:
+        // \{         → busca una llave de apertura literal "{"
+        // [a-zA-Z_]  → el primer carácter del nombre del parámetro debe ser letra o guion bajo
+        // [a-zA-Z0-9_]* → el resto pueden ser letras, números o guiones bajos (0 o más veces)
+        // \}         → busca una llave de cierre literal "}"
+        //
+        // Lo anterior se reemplaza por: ([^/]+)
+        // /level/{id} -> /level/{id}/  -> /level/([^/]+)
+        $endpoint = preg_replace('/\{[a-zA-Z_][a-zA-Z0-9_]*\}/', '([^/]+)', $uri);
+
+        // Se agregan delimitadores y anclajes:
+        // ^ indica el inicio de la cadena, $ el final, así nos aseguramos de que la coincidencia sea exacta
+        // rtrim(...) elimina una barra final si existe para que /user y /user/ no se traten diferente
+        // /level/{id} -> /level/{id}/  -> /level/([^/]+) -> #^/level/([^/]+)$#
+        $endpoint = "#^" . rtrim($endpoint, '/') . "$#";
+
+        // Guarda la ruta convertida junto con su acción asociada, organizada por método HTTP
         self::$routes[$method][] = [
-            'pattern' => $pattern,
+            'endpoint' => $endpoint,
             'action' => $action
         ];
     }
 
-    public static function dispatch($uri, $method) {
+    public static function dispatch($uri, $method)
+    {
+        // Elimina el último slash
         $uri = rtrim($uri, '/');
-        $method = strtoupper($method);
-        $body = json_decode(file_get_contents('php://input'), true) ?? [];
 
+        // Convierte el método a mayúsculas
+        $method = strtoupper($method);
+
+        // Determina el tipo de contenido enviado por el cliente
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+
+        // Según el Content-Type, obtén el cuerpo de la petición de forma adecuada
+        if (stripos($contentType, 'application/json') !== false) {
+            // JSON crudo (POST, PUT)
+            $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        } elseif (stripos($contentType, 'multipart/form-data') !== false || stripos($contentType, 'application/x-www-form-urlencoded') !== false) {
+            // Datos de formulario (POST con o sin archivos)
+            $body = array_merge($_POST, $_FILES);
+        } else {
+            // Otro tipo (texto plano, etc.)
+            $body = [];
+        }
+
+        //Si no existe el método http en nuestro arreglo de metodos, se cumple la condición.
         if (!isset(self::$routes[$method])) {
             http_response_code(405);
             echo json_encode(["error" => "Método no permitido"]);
             return;
         }
 
+        // Recorremos las rutas registradas para el método HTTP recibido (GET, POST, etc.)
         foreach (self::$routes[$method] as $ruta) {
-            if (preg_match($ruta['pattern'], $uri, $coincidencias)) {
-                array_shift($coincidencias); // quitamos la coincidencia completa
+            // Verificamos si la URI solicitada coincide con el patrón de la ruta
+            // Si hay coincidencia, $coincidencias incluirá los valores dinámicos extraídos (ej: {id})
+            if (preg_match($ruta['endpoint'], $uri, $coincidencias)) {
+                array_shift($coincidencias); // Quitamos la coincidencia completa (posición 0), dejamos solo los parámetros
 
+                // Extraemos el nombre del controlador y el método que debe ejecutarse
                 [$controlador, $metodoAccion] = $ruta['action'];
 
+                // Validamos que el controlador y el método realmente existan
                 if (!class_exists($controlador) || !method_exists($controlador, $metodoAccion)) {
                     http_response_code(500);
                     echo json_encode(["error" => "No se encontró el controlador o método"]);
                     return;
                 }
 
-                // Mandamos los parámetros dinámicos + body si existe
+                // Ejecutamos el método del controlador, pasando los parámetros dinámicos de la URL y el cuerpo (body)
                 return call_user_func_array([$controlador, $metodoAccion], array_merge($coincidencias, [$body]));
             }
         }
