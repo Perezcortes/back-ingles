@@ -29,7 +29,7 @@ class Level {
         return $consulta->execute($valores);
     }
 
-    public function actualizar($id, $datos) {
+    public function actualizarPorId($id, $datos) {
         $campos = [];
         $valores = [];
     

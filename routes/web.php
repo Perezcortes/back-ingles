@@ -9,3 +9,6 @@ Route::get('/levels/getOne/{id}', [LevelController::class, 'getOne']);
 Route::post('/levels/create', [LevelController::class, 'create']);
 Route::put('/levels/update/{id}', [LevelController::class, 'update']);
 Route::delete('/levels/deleteOne/{id}', [LevelController::class, 'deleteOne']);
+
+
+//Login para Alumnos

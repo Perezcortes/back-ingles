@@ -88,7 +88,7 @@ class LevelController
                 return self::sendError(404, "No se encontró el Nivel con id: $id");
             }
 
-            $actualizado = $levelModel->actualizar($id, $data);
+            $actualizado = $levelModel->actualizarPorId($id, $data);
 
             if ($actualizado) {
                 $nivelActualizado = $levelModel->obtenerPorId($id);
