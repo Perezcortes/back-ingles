@@ -46,7 +46,7 @@ class Level {
     }
     
 
-    public function eliminar($id) {
+    public function eliminarPorId($id) {
         $consulta = $this->conexion->prepare("DELETE FROM levels WHERE id = ?");
         return $consulta->execute([$id]);
     }

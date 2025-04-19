@@ -21,15 +21,15 @@ class Student{
         return $consulta->fetch();
     }
 
-    public function obtenerPorEmail($id) {
+    public function obtenerPorEmail($email) {
         $consulta = $this->conexion->prepare("SELECT * FROM students WHERE email = ?");
-        $consulta->execute([$id]);
+        $consulta->execute([$email]);
         return $consulta->fetch();
     }
 
-    public function obtenerPorMatricula($id) {
+    public function obtenerPorMatricula($matricula) {
         $consulta = $this->conexion->prepare("SELECT * FROM students WHERE matricula = ?");
-        $consulta->execute([$id]);
+        $consulta->execute([$matricula]);
         return $consulta->fetch();
     }
 
@@ -59,7 +59,8 @@ class Student{
         $consulta = $this->conexion->prepare($sql);
         return $consulta->execute($valores);
     }
-    public function eliminar($id) {
+
+    public function eliminarPorId($id) {
         $consulta = $this->conexion->prepare("DELETE FROM students WHERE id = ?");
         return $consulta->execute([$id]);
     }

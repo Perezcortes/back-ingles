@@ -124,7 +124,7 @@ class LevelController
             }
 
             // 2. Eliminarlo
-            $eliminado = $levelModel->eliminar($id);
+            $eliminado = $levelModel->eliminarPorId($id);
 
             if ($eliminado) {
                 http_response_code(200);
