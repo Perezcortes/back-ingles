@@ -1,6 +1,5 @@
 <?php
-require_once __DIR__ . '/../models/Student.php';
-require_once __DIR__ . '/../middlewares/AuthenticationMiddleware.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/Student.php';
 
 class StudentLoginController
 {
@@ -17,7 +16,7 @@ class StudentLoginController
         // Validar formato del correo
         if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             http_response_code(400);
-            echo json_encode(["error" => "credenciales invalidas."]);
+            echo json_encode(["error" => "Email inválido."]);
             return;
         }
 
@@ -62,23 +61,29 @@ class StudentLoginController
 
     public static function logout()
     {
-        // Inicia la sesión si aún no está iniciada
-        session_start();
-
-        // Elimina todas las variables de sesión
-        session_unset();
-
-        // Destruye la sesión
-        session_destroy();
-
-        // Elimina la cookie de la sesión en el navegador
-        if (isset($_COOKIE[session_name()])) {
-            setcookie(session_name(), '', time() - 3600, '/'); // Eliminar la cookie con un tiempo pasado
+        // Si no hay sesion ni cookie.
+        if (session_status() === PHP_SESSION_NONE && isset($_COOKIE[session_name()])) {
+            session_start();
         }
 
-        // Respuesta de éxito
-        http_response_code(200);
-        echo json_encode(["message" => "Logout exitoso."]);
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            // Elimina variables de sesión
+            session_unset();
+
+            // Destruye la sesión en el servidor
+            session_destroy();
+
+            // Borra la cookie de sesión en el navegador
+            if (isset($_COOKIE['PHPSESSID'])) {
+                setcookie('PHPSESSID', '', time() - 3600, '/');
+            }
+
+            http_response_code(200);
+            echo json_encode(["message" => "Logout exitoso."]);
+        } else {
+            http_response_code(200);
+            echo json_encode(["message" => "Ya estabas deslogueado o no tenías una sesión activa."]);
+        }
     }
 
 }

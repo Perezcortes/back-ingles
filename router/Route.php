@@ -10,9 +10,9 @@ class Route
      * $uri - Ruta del endpoint
      * $action - Controlador y método estático asociado al endpoint
      */
-    public static function get($uri, $action)
+    public static function get($uri, $action, $middleware = null)
     {
-        self::add('GET', $uri, $action);
+        self::add('GET', $uri, $action, $middleware);
     }
 
 
@@ -21,9 +21,9 @@ class Route
      * $uri - Ruta del endpoint
      * $action - Controlador y método estático asociado al endpoint
      */
-    public static function post($uri, $action)
+    public static function post($uri, $action, $middleware = null)
     {
-        self::add('POST', $uri, $action);
+        self::add('POST', $uri, $action, $middleware);
     }
 
 
@@ -32,9 +32,9 @@ class Route
      * $uri - Ruta del endpoint
      * $action - Controlador y método estático asociado al endpoint
      */
-    public static function put($uri, $action)
+    public static function put($uri, $action, $middleware = null)
     {
-        self::add('PUT', $uri, $action);
+        self::add('PUT', $uri, $action, $middleware);
     }
 
 
@@ -43,13 +43,13 @@ class Route
      * $uri - Ruta del endpoint
      * $action - Controlador y método estático asociado al endpoint
      */
-    public static function delete($uri, $action)
+    public static function delete($uri, $action, $middleware = null)
     {
-        self::add('DELETE', $uri, $action);
+        self::add('DELETE', $uri, $action, $middleware);
     }
 
 
-    private static function add($method, $uri, $action)
+    private static function add($method, $uri, $action, $middleware = null)
     {
         // Convierte parámetros dinámicos como {id} en expresiones regulares que capturan valores
         // Explicación del patrón:
@@ -71,7 +71,8 @@ class Route
         // Guarda la ruta convertida junto con su acción asociada, organizada por método HTTP
         self::$routes[$method][] = [
             'endpoint' => $endpoint,
-            'action' => $action
+            'action' => $action,
+            'middleware' =>$middleware,
         ];
     }
 
@@ -107,13 +108,27 @@ class Route
 
         // Recorremos las rutas registradas para el método HTTP recibido (GET, POST, etc.)
         foreach (self::$routes[$method] as $ruta) {
+
             // Verificamos si la URI solicitada coincide con el patrón de la ruta
             // Si hay coincidencia, $coincidencias incluirá los valores dinámicos extraídos (ej: {id})
+
             if (preg_match($ruta['endpoint'], $uri, $coincidencias)) {
-                array_shift($coincidencias); // Quitamos la coincidencia completa (posición 0), dejamos solo los parámetros
+
+                // Quitamos la coincidencia completa (posición 0), dejamos solo los parámetros
+                array_shift($coincidencias); 
 
                 // Extraemos el nombre del controlador y el método que debe ejecutarse
                 [$controlador, $metodoAccion] = $ruta['action'];
+
+                //Si hay un middleware, entonces lo ejecutamos primero
+                if (isset($ruta['middleware']) && is_callable($ruta['middleware'])) {
+                    $autorizado = call_user_func($ruta['middleware']);
+                    if (!$autorizado) {
+                        http_response_code(401);
+                        echo json_encode(["error" => "No autorizado. Debes iniciar sesión."]);
+                        return;
+                    }
+                }
 
                 // Validamos que el controlador y el método realmente existan
                 if (!class_exists($controlador) || !method_exists($controlador, $metodoAccion)) {
