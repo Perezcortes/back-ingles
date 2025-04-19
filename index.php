@@ -5,7 +5,7 @@ header("Content-Type: application/json");
 
 // Importar clase Route, require_once asegura que el archivo se incluya una sola vez,
 // evitando errores por múltiples inclusiones.
-require_once 'core/Route.php';
+require_once 'router/Route.php';
 
 // Definir rutas
 require_once 'routes/web.php';

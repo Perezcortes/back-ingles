@@ -1,6 +1,6 @@
 <?php
 
-class AuthenticationMiddleware
+class SessionValidator
 {
     public static function check()
     {

@@ -3,11 +3,11 @@
 // Controladores necesarios
 require_once 'controllers/LevelController.php';
 require_once 'auth/StudentLoginController.php';
-require_once 'middlewares/AuthenticationMiddleware.php';
+require_once 'middlewares/SessionValidator.php';
 
 // Rutas para Level con parámetros dinámicos 
 Route::post('/levels/create', [LevelController::class, 'create']);
-Route::get('/levels/getOne/{id}', [LevelController::class, 'getOne'], [AuthenticationMiddleware::class, 'check']);
+Route::get('/levels/getOne/{id}', [LevelController::class, 'getOne'], [SessionValidator::class, 'check']);
 Route::get('/levels/getAll', [LevelController::class, 'getAll']);
 Route::put('/levels/update/{id}', [LevelController::class, 'update']);
 Route::delete('/levels/deleteOne/{id}', [LevelController::class, 'deleteOne']);
@@ -15,4 +15,4 @@ Route::delete('/levels/deleteOne/{id}', [LevelController::class, 'deleteOne']);
 
 //Login para Alumnos
 Route::post('/students/login', [StudentLoginController::class, 'login']);
-Route::post('/students/logout', [StudentLoginController::class, 'logout'], [AuthenticationMiddleware::class, 'check']);
+Route::post('/students/logout', [StudentLoginController::class, 'logout'], [SessionValidator::class, 'check']);
