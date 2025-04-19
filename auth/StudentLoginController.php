@@ -14,6 +14,13 @@ class StudentLoginController
             return;
         }
 
+        // Validar formato del correo
+        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(["error" => "credenciales invalidas."]);
+            return;
+        }
+
         // Buscar estudiante por email
         $studentModel = new Student();
         $student = $studentModel->obtenerPorEmail($data['email']);
