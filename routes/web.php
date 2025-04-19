@@ -2,7 +2,7 @@
 
 // Controladores necesarios
 require_once 'controllers/LevelController.php';
-require_once 'auth/StudentLoginController.php';
+require_once 'controllers/auth/student/StudentLoginController.php';
 require_once 'middlewares/SessionValidator.php';
 
 // Rutas para Level con parámetros dinámicos 
