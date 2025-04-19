@@ -4,18 +4,21 @@ class AuthenticationMiddleware
 {
     public static function check()
     {
-        // Iniciar la sesión si no está iniciada
-        if (session_status() == PHP_SESSION_NONE) {
+        // Verificar si hay una sesión activa
+        if (session_status() === PHP_SESSION_NONE) {
+            // Si no hay sesión activa, inicia la sesión y permite que PHP maneje la cookie
             session_start();
         }
 
-        // Verificar si el usuario tiene una sesión activa (por ejemplo, si está logueado)
+        // Verificamos si el valor 'student_id' está en la sesión
         if (isset($_SESSION['student_id'])) {
-            // Si está autenticado, retornar true
+            // Si hay un student_id válido en la sesión, la sesión está activa
             return true;
         }
 
-        // Si no está autenticado, retornar false
+        // Retorna falso porque no hay una sesión válida
         return false;
     }
+
+
 }
