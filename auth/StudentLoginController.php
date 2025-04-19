@@ -1,20 +1,22 @@
 <?php
 require_once __DIR__ . '/../models/Student.php';
+require_once __DIR__ . '/../middlewares/AuthenticationMiddleware.php';
 
-class StudentLoginController 
+class StudentLoginController
 {
-    public static function login($email, $password)
+    public static function login($data)
     {
+
         // Validación básica
-        if (empty($email) || empty($password)) {
+        if (empty($data['email']) || empty($data['password'])) {
             http_response_code(400);
-            echo json_encode(["error" => "Email y contraseña son obligatorios."]);
+            echo json_encode(["error" => "'email' y 'password' son obligatorios."]);
             return;
         }
 
         // Buscar estudiante por email
         $studentModel = new Student();
-        $student = $studentModel->obtenerPorEmail($email);
+        $student = $studentModel->obtenerPorEmail($data['email']);
 
         if (!$student) {
             http_response_code(401);
@@ -23,7 +25,7 @@ class StudentLoginController
         }
 
         // Verificar contraseña en texto plano
-        if ($password !== $student['password']) {
+        if ($data['password'] !== $student['password']) {
             http_response_code(401);
             echo json_encode(["error" => "Credenciales inválidas."]);
             return;
@@ -61,6 +63,11 @@ class StudentLoginController
 
         // Destruye la sesión
         session_destroy();
+
+        // Elimina la cookie de la sesión en el navegador
+        if (isset($_COOKIE[session_name()])) {
+            setcookie(session_name(), '', time() - 3600, '/'); // Eliminar la cookie con un tiempo pasado
+        }
 
         // Respuesta de éxito
         http_response_code(200);
