@@ -37,7 +37,7 @@ class StudentLoginController
             return;
         }
 
-        // Configurar duración de la sesión a 3 horas
+        // Configurar duración de la sesión a 3 horas (el parametro es en segundos) 1 miuto=60
         ini_set('session.gc_maxlifetime', 10800);
         session_set_cookie_params(10800);
         session_start();
