@@ -13,8 +13,6 @@ Route::post('/students/logout', [StudentLoginController::class, 'logout'], [Sess
 //Login/Logout para Profesores
 
 
-//Login/Logout para Administradores
-
 
 // Rutas para Level con parámetros dinámicos 
 Route::post('/levels/create', [LevelController::class, 'create'],[SessionValidator::class, 'check']);
