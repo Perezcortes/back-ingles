@@ -15,10 +15,10 @@ Route::post('/students/logout', [StudentLoginController::class, 'logout'], [Sess
 
 
 // Rutas para Level con parámetros dinámicos 
-Route::post('/levels/create', [LevelController::class, 'create'],[SessionValidator::class, 'check']);
-Route::get('/levels/getOne/{id}', [LevelController::class, 'getOne'], [SessionValidator::class, 'check']);
-Route::get('/levels/getAll', [LevelController::class, 'getAll'],[SessionValidator::class, 'check']);
-Route::put('/levels/update/{id}', [LevelController::class, 'update'],[SessionValidator::class, 'check']);
-Route::delete('/levels/deleteOne/{id}', [LevelController::class, 'deleteOne'],[SessionValidator::class, 'check']);
+Route::post('/levels/create', [LevelController::class, 'create'],);
+Route::get('/levels/getOne/{id}', [LevelController::class, 'getOne'], );
+Route::get('/levels/getAll', [LevelController::class, 'getAll'],);
+Route::put('/levels/update/{id}', [LevelController::class, 'update'],);
+Route::delete('/levels/deleteOne/{id}', [LevelController::class, 'deleteOne'],);
 
 
