@@ -2,6 +2,7 @@
 
 // Controladores necesarios
 require_once 'controllers/LevelController.php';
+require_once 'controllers/StudentController.php';
 require_once 'controllers/auth/student/StudentLoginController.php';
 require_once 'middlewares/SessionValidator.php';
 
@@ -20,5 +21,14 @@ Route::get('/level/getOne/{id}', [LevelController::class, 'getOne'], );
 Route::get('/level/getAll', [LevelController::class, 'getAll'],);
 Route::put('/level/update/{id}', [LevelController::class, 'update'],);
 Route::delete('/level/deleteOne/{id}', [LevelController::class, 'deleteOne'],);
+
+// Rutas para student con parámetros dinámicos 
+Route::post('/student/create', [StudentController::class, 'create'],);
+Route::get('/student/getOne/Id/{id}', [StudentController::class, 'getStudentById'], );
+Route::get('/student/getOne/Email/{id}', [StudentController::class, 'getStudentByEmail'], );
+Route::get('/student/getOne/Matricula/{id}', [StudentController::class, 'getStudentByMatricula'], );
+Route::get('/student/getAll', [StudentController::class, 'getAll'],);
+Route::put('/student/update/{id}', [StudentController::class, 'update'],);
+Route::delete('/student/deleteOne/{id}', [StudentController::class, 'deleteOne'],);
 
 

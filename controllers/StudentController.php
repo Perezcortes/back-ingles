@@ -81,7 +81,7 @@ class StudentController
     {
         $requiredVars = [
             'id_major',
-            'id_class_group_english',
+            'id_group_english',
             'matricula',
             'first_names',
             'last_name',
@@ -98,9 +98,9 @@ class StudentController
         }
 
         // Validar que id_major e id_class_group_english sean numéricos
-        if (!is_numeric($data['id_major']) || !is_numeric($data['id_class_group_english'])) {
+        if (!is_numeric($data['id_major']) || !is_numeric($data['id_group_english'])) {
             http_response_code(400);
-            echo json_encode(["error" => "Los campos 'id_major' y 'id_class_group_english' deben ser numéricos."]);
+            echo json_encode(["error" => "Los campos 'id_major' y 'id_group_english' deben ser numéricos."]);
             return;
         }
 
