@@ -1,0 +1,103 @@
+openapi: 3.0.0
+info:
+  title: API Usuarios - Back Idiomas
+  version: 1.0.0
+servers:
+  - url: http://localhost:8093/
+paths:
+  /levels/getAll:
+    get:
+      summary: Obtener todos los usuarios
+      responses:
+        '200':
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Usuario'
+  /student/create:
+    post:
+      summary: Crear un nuevo usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioInput'
+      responses:
+        '201':
+          description: Usuario creado
+
+  /usuarios/{id}:
+    get:
+      summary: Obtener un usuario por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Usuario encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '404':
+          description: Usuario no encontrado
+
+    put:
+      summary: Actualizar un usuario
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioInput'
+      responses:
+        '200':
+          description: Usuario actualizado
+
+    delete:
+      summary: Eliminar un usuario
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Usuario eliminado
+
+components:
+  schemas:
+    Usuario:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        correo:
+          type: string
+
+    UsuarioInput:
+      type: object
+      properties:
+        nombre:
+          type: string
+        correo:
+          type: string
+      required:
+        - nombre
+        - correo
