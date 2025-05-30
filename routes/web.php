@@ -4,15 +4,17 @@
 require_once 'controllers/LevelController.php';
 require_once 'controllers/StudentController.php';
 require_once 'controllers/auth/student/StudentLoginController.php';
+require_once 'controllers/auth/user/UserLoginController.php';
 require_once 'middlewares/SessionValidator.php';
 
 
 //Login/Logout para Alumnos
 Route::post('/student/login', [StudentLoginController::class, 'login']);
-Route::post('/student/logout', [StudentLoginController::class, 'logout'], [SessionValidator::class, 'check']);
+Route::post('/student/logout', [StudentLoginController::class, 'logout'], [SessionValidator::class, 'checkStudent']);
 
-//Login/Logout para Profesores
-
+//Login/Logout para Profesores/Jefe de nivel/Administrador
+Route::post('/user/login', [UserLoginController::class, 'login']);
+Route::post('/user/logout', [UserLoginController::class, 'logout'], [SessionValidator::class, 'checkUser']);
 
 
 // Rutas para Level con parámetros dinámicos 
