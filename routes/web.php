@@ -9,6 +9,8 @@ require_once 'controllers/auth/user/UserLoginController.php';
 require_once 'middlewares/SessionValidator.php';
 
 
+
+
 //Login/Logout para Alumnos
 Route::post('/student/login', [StudentLoginController::class, 'login']);
 Route::post('/student/logout', [StudentLoginController::class, 'logout'], [SessionValidator::class, 'checkStudent']);

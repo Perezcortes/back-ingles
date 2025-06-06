@@ -1,5 +1,8 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/models/Student.php';
+header("Access-Control-Allow-Origin: http://localhost:8094");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
 
 class StudentLoginController
 {

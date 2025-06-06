@@ -1,5 +1,4 @@
 <?php
-
 class Route
 {
     // Arreglo estático que guarda todas las rutas registradas, agrupadas por método HTTP
