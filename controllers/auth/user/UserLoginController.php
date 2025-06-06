@@ -1,10 +1,7 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/models/Student.php';
-header("Access-Control-Allow-Origin: http://localhost:8094");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/User.php';
 
-class StudentLoginController
+class UserLoginController
 {
     public static function login($data)
     {
@@ -24,17 +21,17 @@ class StudentLoginController
         }
 
         // Buscar estudiante por email
-        $studentModel = new Student();
-        $student = $studentModel->obtenerPorEmail($data['email']);
+        $userModel = new User();
+        $user = $userModel->obtenerPorEmail($data['email']);
 
-        if (!$student) {
+        if (!$user) {
             http_response_code(401);
             echo json_encode(["error" => "Credenciales inválidas."]);
             return;
         }
 
         // Verificar contraseña en texto plano
-        if ($data['password'] !== $student['password']) {
+        if ($data['password'] !== $user['password']) {
             http_response_code(401);
             echo json_encode(["error" => "Credenciales inválidas."]);
             return;
@@ -46,18 +43,20 @@ class StudentLoginController
         session_start();
 
         // Guardar datos de sesión
-        $_SESSION['student_id'] = $student['id'];
-        $_SESSION['student_name'] = $student['first_names'] . ' ' . $student['last_name'];
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_name'] = $user['first_names'] . ' ' . $user['last_name'];
         $_SESSION['login_time'] = time(); // Hora de inicio
 
         http_response_code(200);
         echo json_encode([
             "message" => "Login exitoso.",
-            "student" => [
-                "id" => $student['id'],
-                "name" => $_SESSION['student_name'],
-                "email" => $student['email'],
-                "matricula" => $student["matricula"],
+            "user" => [
+                "id" => $user['id'],
+                "name" => $_SESSION['user_name'],
+                "email" => $user['email'],
+                "is_administrator" => $user['is_administrator'],
+                "is_level_coordinator" => $user['is_level_coordinator'],
+                "is_professor" => $user['is_professor']
             ]
         ]);
     }

@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../config/database.php';
 
 
-class Student{
+class User{
 
     private $conexion;
 
@@ -12,25 +12,19 @@ class Student{
     }
 
     public function obtenerTodos() {
-        $consulta = $this->conexion->query("SELECT * FROM student ORDER BY id ASC");
+        $consulta = $this->conexion->query("SELECT * FROM user ORDER BY id ASC");
         return $consulta->fetchAll();
     }
 
     public function obtenerPorId($id) {
-        $consulta = $this->conexion->prepare("SELECT * FROM student WHERE id = ?");
+        $consulta = $this->conexion->prepare("SELECT * FROM user WHERE id = ?");
         $consulta->execute([$id]);
         return $consulta->fetch();
     }
 
     public function obtenerPorEmail($email) {
-        $consulta = $this->conexion->prepare("SELECT * FROM student WHERE email = ?");
+        $consulta = $this->conexion->prepare("SELECT * FROM user WHERE email = ?");
         $consulta->execute([$email]);
-        return $consulta->fetch();
-    }
-
-    public function obtenerPorMatricula($matricula) {
-        $consulta = $this->conexion->prepare("SELECT * FROM student WHERE matricula = ?");
-        $consulta->execute([$matricula]);
         return $consulta->fetch();
     }
 
@@ -40,7 +34,7 @@ class Student{
         $placeholders = array_fill(0, count($datos), '?');
         $valores = array_values($datos);
     
-        $sql = "INSERT INTO student (" . implode(',', $campos) . ") VALUES (" . implode(',', $placeholders) . ")";
+        $sql = "INSERT INTO user (" . implode(',', $campos) . ") VALUES (" . implode(',', $placeholders) . ")";
         $consulta = $this->conexion->prepare($sql);
         return $consulta->execute($valores);
     }
@@ -56,13 +50,13 @@ class Student{
     
         $valores[] = $id; // El ID va al final para el WHERE
     
-        $sql = "UPDATE student SET " . implode(", ", $campos) . " WHERE id = ?";
+        $sql = "UPDATE user SET " . implode(", ", $campos) . " WHERE id = ?";
         $consulta = $this->conexion->prepare($sql);
         return $consulta->execute($valores);
     }
 
     public function eliminarPorId($id) {
-        $consulta = $this->conexion->prepare("DELETE FROM student WHERE id = ?");
+        $consulta = $this->conexion->prepare("DELETE FROM user WHERE id = ?");
         return $consulta->execute([$id]);
     }
 }

@@ -1,93 +1,78 @@
 <?php
-require_once __DIR__ . '/../models/Student.php';
+require_once __DIR__ . '/../models/User.php';
 
 
-class StudentController 
+class UserController 
 {
-    // Get all students
+    // Get all users
     public static function getAll()
     {
         try {
-            $studentModel = new Student();
-            $students = $studentModel->obtenerTodos();
+            $userModel = new User();
+            $users = $userModel->obtenerTodos();
 
             http_response_code(200);
-            echo json_encode($students);
+            echo json_encode($users);
         } catch (Exception $e) {
             self::sendError(500, "Error al obtener los registros de la tabla.", $e);
         }
     }
 
-    // Get student by ID
-    public static function getStudentById($id)
+    // Get user by ID
+    public static function getUserById($id)
     {
         if (!is_numeric($id)) {
             return self::sendError(400, "El id debe ser numérico.");
         }
 
         try {
-            $studentModel = new Student();
-            $student = $studentModel->obtenerPorId($id);
+            $userModel = new User();
+            $user = $userModel->obtenerPorId($id);
 
-            if ($student) {
+            if ($user) {
                 http_response_code(200);
-                echo json_encode($student);
+                echo json_encode($user);
             } else {
-                self::sendError(404, "Student no encontrado");
+                self::sendError(404, "User no encontrado");
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener el registro student", $e);
+            self::sendError(500, "Error al obtener el registro user", $e);
         }
     }
 
-    public static function getStudentByEmail($email)
+    public static function getUserByEmail($email)
     {
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return self::sendError(400, "El correo electrónico no es válido.");
         }
 
         try {
-            $studentModel = new Student();
-            $student = $studentModel->obtenerPorEmail($email);
+            $userModel = new User();
+            $user = $userModel->obtenerPorEmail($email);
 
-            if ($student) {
+            if ($user) {
                 http_response_code(200);
-                echo json_encode($student);
+                echo json_encode($user);
             } else {
-                self::sendError(404, "Student no encontrado");
+                self::sendError(404, "User no encontrado");
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener el registro student", $e);
-        }
-    }
-
-    public static function getStudentByMatricula($matricula)
-    {
-        try {
-            $studentModel = new Student();
-            $student = $studentModel->obtenerPorMatricula($matricula);
-
-            if ($student) {
-                http_response_code(200);
-                echo json_encode($student);
-            } else {
-                self::sendError(404, "Student no encontrado");
-            }
-        } catch (Exception $e) {
-            self::sendError(500, "Error al obtener el registro student", $e);
+            self::sendError(500, "Error al obtener el registro user", $e);
         }
     }
 
     public static function create($data)
     {
         $requiredVars = [
-            'id_major',
-            'id_group_english',
-            'matricula',
             'first_names',
+            'office',
             'last_name',
             'email',
-            'password'
+            'password',
+            'is_professor',
+            'is_level_coordinator',
+            'is_administrator',
+            'is_active'
         ];
 
         foreach ($requiredVars as $var) {
@@ -99,9 +84,9 @@ class StudentController
         }
 
         // Validar que id_major e id_class_group_english sean numéricos
-        if (!is_numeric($data['id_major']) || !is_numeric($data['id_group_english'])) {
+        if (!is_numeric($data['office'])) {
             http_response_code(400);
-            echo json_encode(["error" => "Los campos 'id_major' y 'id_group_english' deben ser numéricos."]);
+            echo json_encode(["error" => "Los campos 'id_major' deben ser numéricos."]);
             return;
         }
 
@@ -113,23 +98,22 @@ class StudentController
         }
 
         try {
-            $studentModel = new Student();
-            $creado = $studentModel->crear($data);
+            $userModel = new User();
+            $creado = $userModel->crear($data);
     
             if ($creado) {
                 http_response_code(201);
                 echo json_encode([
-                    "message" => "Student creado exitosamente.",
-                    "student" => $data
+                    "message" => "User creado exitosamente.",
+                    "user" => $data
                 ]);
             } else {
-                self::sendError(500, "Error al crear el student.");
+                self::sendError(500, "Error al crear el user.");
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al crear el student.", $e);
+            self::sendError(500, "Error al crear el user.", $e);
         }
     }
-
 
     public static function update($id, $data)
     {
@@ -142,28 +126,28 @@ class StudentController
         }
     
         try {
-            $studentModel = new Student();
-            $studentExistente = $studentModel->obtenerPorId($id);
+            $userModel = new User();
+            $userExistente = $userModel->obtenerPorId($id);
     
-            if (!$studentExistente) {
-                return self::sendError(404, "No se encontró el student con id: $id");
+            if (!$userExistente) {
+                return self::sendError(404, "No se encontró el user con id: $id");
             }
     
-            $actualizado = $studentModel->actualizarPorId($id, $data);
+            $actualizado = $userModel->actualizarPorId($id, $data);
     
             if ($actualizado) {
-                $studentActualizado = $studentModel->obtenerPorId($id);
+                $userActualizado = $userModel->obtenerPorId($id);
     
                 http_response_code(200);
                 echo json_encode([
                     "message" => "Estudiante actualizado exitosamente",
-                    "student" => $studentActualizado
+                    "user" => $userActualizado
                 ]);
             } else {
-                self::sendError(500, "Error interno al intentar actualizar el student.");
+                self::sendError(500, "Error interno al intentar actualizar el user.");
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al actualizar el student", $e);
+            self::sendError(500, "Error al actualizar el user", $e);
         }
     }
 
@@ -174,28 +158,28 @@ class StudentController
         }
 
         try {
-            $studentModel = new Student();
+            $userModel = new User();
 
             // 1. Obtener el registro antes de eliminar
-            $student = $studentModel->obtenerPorId($id);
-            if (!$student) {
+            $user = $userModel->obtenerPorId($id);
+            if (!$user) {
                 return self::sendError(404, "No se encontró el nivel con id: $id");
             }
 
             // 2. Eliminarlo
-            $eliminado = $studentModel->eliminarPorId($id);
+            $eliminado = $userModel->eliminarPorId($id);
 
             if ($eliminado) {
                 http_response_code(200);
                 echo json_encode([
-                    "message" => "Student eliminado exitosamente.",
-                    "student" => $student
+                    "message" => "User eliminado exitosamente.",
+                    "user" => $user
                 ]);
             } else {
-                self::sendError(500, "Error interno al intentar eliminar el Student.");
+                self::sendError(500, "Error interno al intentar eliminar el User.");
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al eliminar el Student.", $e);
+            self::sendError(500, "Error al eliminar el User.", $e);
         }
     }
 
