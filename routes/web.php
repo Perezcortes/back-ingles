@@ -7,6 +7,8 @@ require_once 'controllers/UserController.php';
 require_once 'controllers/auth/student/StudentLoginController.php';
 require_once 'controllers/auth/user/UserLoginController.php';
 require_once 'middlewares/SessionValidator.php';
+require_once 'controllers/MajorController.php';
+require_once 'controllers/EnglishGroupController.php';
 
 
 
@@ -44,4 +46,24 @@ Route::get('/user/getOne/Email/{id}', [UserController::class, 'getuserByEmail'],
 Route::put('/user/update/{id}', [UserController::class, 'update'],);
 Route::delete('/user/deleteOne/{id}', [UserController::class, 'deleteOne'],);
 
+
+// Rutas para EnglishGroup con parámetros dinámicos 
+Route::post('/englishGroup/create', [EnglishGroupController::class, 'create']);
+Route::get('/englishGroup/getOne/{id}', [EnglishGroupController::class, 'getOne']);
+Route::get('/englishGroup/getByProfessor/{id_professor}', [EnglishGroupController::class, 'getByProfessor']);
+Route::get('/englishGroup/getByLevel/{id_level}', [EnglishGroupController::class, 'getByLevel']);
+Route::get('/englishGroup/getAll', [EnglishGroupController::class, 'getAll']);
+Route::put('/englishGroup/update/{id}', [EnglishGroupController::class, 'update']);
+Route::delete('/englishGroup/deleteOne/{id}', [EnglishGroupController::class, 'deleteOne']);
+Route::post('/englishGroup/restore/{id}', [EnglishGroupController::class, 'restore']); // Para restaurar un grupo
+Route::delete('/englishGroup/deletePermanent/{id}', [EnglishGroupController::class, 'deletePermanent']); // Eliminar permanentemente
+
+// Rutas para Major con parámetros dinámicos
+Route::post('/major/create', [MajorController::class, 'create']);
+Route::get('/major/getOne/{id}', [MajorController::class, 'getOne']);
+Route::get('/major/getAll', [MajorController::class, 'getAll']);
+Route::put('/major/update/{id}', [MajorController::class, 'update']);
+Route::delete('/major/deleteOne/{id}', [MajorController::class, 'deleteOne']);
+Route::post('/major/restore/{id}', [MajorController::class, 'restore']); // Ruta para restaurar un major
+Route::delete('/major/deletePermanent/{id}', [MajorController::class, 'deletePermanent']); // Ruta para eliminar permanentemente un major
 
