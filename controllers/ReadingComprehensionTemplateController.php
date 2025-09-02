@@ -1,0 +1,290 @@
+<?php
+require_once __DIR__ . '/../models/ReadingComprehensionTemplate.php';
+
+class ReadingComprehensionTemplateController
+{
+    // Listar activos
+    public static function getAll()
+    {
+        try {
+            $model = new ReadingComprehensionTemplate();
+            $items = $model->obtenerTodos();
+
+            http_response_code(200);
+            echo json_encode($items);
+        } catch (Exception $e) {
+            self::sendError(500, "Error al obtener los registros.", $e);
+        }
+    }
+
+    // Obtener uno por ID
+    public static function getOne($id)
+    {
+        if (!is_numeric($id)) return self::sendError(400, "El id debe ser numérico.");
+
+        try {
+            $model = new ReadingComprehensionTemplate();
+            $item = $model->obtenerPorId($id);
+
+            if ($item) {
+                http_response_code(200);
+                echo json_encode($item);
+            } else {
+                self::sendError(404, "Plantilla de reading comprehension no encontrada.");
+            }
+        } catch (Exception $e) {
+            self::sendError(500, "Error al obtener el registro.", $e);
+        }
+    }
+
+    // Obtener por nivel
+    public static function getByLevel($id_level)
+    {
+        if (!is_numeric($id_level)) {
+            return self::sendError(400, "El id_level debe ser numérico.");
+        }
+
+        try {
+            $model = new ReadingComprehensionTemplate();
+            $items = $model->obtenerPorNivel($id_level);
+
+            http_response_code(200);
+            echo json_encode($items);
+        } catch (Exception $e) {
+            self::sendError(500, "Error al obtener por nivel.", $e);
+        }
+    }
+
+    // Crear
+    public static function create($data)
+    {
+        $required = ['title','instruction','question_number','topic','description','id_level'];
+        foreach ($required as $f) {
+            if (!isset($data[$f])) {
+                http_response_code(400);
+                echo json_encode(["error" => "El campo '$f' es obligatorio"]);
+                return;
+            }
+        }
+
+        // Validaciones por tipo
+        $title = trim((string)$data['title']);
+        $instruction = trim((string)$data['instruction']);
+        $topic = trim((string)$data['topic']);
+        $description = trim((string)$data['description']);
+
+        if ($title === '' || mb_strlen($title) > 300) {
+            http_response_code(400);
+            echo json_encode(["error" => "El campo 'title' es obligatorio y máx. 300 caracteres"]);
+            return;
+        }
+        if ($topic === '' || mb_strlen($topic) > 300) {
+            http_response_code(400);
+            echo json_encode(["error" => "El campo 'topic' es obligatorio y máx. 300 caracteres"]);
+            return;
+        }
+        if ($instruction === '') {
+            http_response_code(400);
+            echo json_encode(["error" => "El campo 'instruction' es obligatorio"]);
+            return;
+        }
+        if ($description === '') {
+            http_response_code(400);
+            echo json_encode(["error" => "El campo 'description' es obligatorio"]);
+            return;
+        }
+        if (!is_numeric($data['question_number']) || !is_numeric($data['id_level'])) {
+            http_response_code(400);
+            echo json_encode(["error" => "'question_number' e 'id_level' deben ser numéricos"]);
+            return;
+        }
+
+        try {
+            $model = new ReadingComprehensionTemplate();
+            $creado = $model->crear([
+                'title' => $title,
+                'instruction' => $instruction,
+                'question_number' => (int)$data['question_number'],
+                'topic' => $topic,
+                'description' => $description,
+                'id_level' => (int)$data['id_level'],
+            ]);
+
+            if ($creado) {
+                http_response_code(201);
+                echo json_encode([
+                    "message" => "Plantilla de reading comprehension creada exitosamente.",
+                    "reading_comprehension_template" => [
+                        "title" => $title,
+                        "instruction" => $instruction,
+                        "question_number" => (int)$data['question_number'],
+                        "topic" => $topic,
+                        "description" => $description,
+                        "id_level" => (int)$data['id_level'],
+                    ]
+                ]);
+            } else {
+                self::sendError(500, "Error al crear el registro.");
+            }
+        } catch (Exception $e) {
+            self::sendError(500, "Error al crear el registro.", $e);
+        }
+    }
+
+    // Actualizar por ID
+    public static function update($id, $data)
+    {
+        if (!is_numeric($id)) return self::sendError(400, "El id debe ser numérico.");
+        if (empty($data)) return self::sendError(400, "Se requiere al menos un campo para actualizar.");
+
+        $payload = [];
+
+        if (array_key_exists('title', $data)) {
+            $t = trim((string)$data['title']);
+            if ($t === '' || mb_strlen($t) > 300) {
+                return self::sendError(400, "El campo 'title' no puede ser vacío ni exceder 300 caracteres.");
+            }
+            $payload['title'] = $t;
+        }
+
+        if (array_key_exists('instruction', $data)) {
+            $i = trim((string)$data['instruction']);
+            if ($i === '') return self::sendError(400, "El campo 'instruction' no puede ser vacío.");
+            $payload['instruction'] = $i;
+        }
+
+        if (array_key_exists('question_number', $data)) {
+            if (!is_numeric($data['question_number'])) {
+                return self::sendError(400, "El campo 'question_number' debe ser numérico.");
+            }
+            $payload['question_number'] = (int)$data['question_number'];
+        }
+
+        if (array_key_exists('topic', $data)) {
+            $tp = trim((string)$data['topic']);
+            if ($tp === '' || mb_strlen($tp) > 300) {
+                return self::sendError(400, "El campo 'topic' no puede ser vacío ni exceder 300 caracteres.");
+            }
+            $payload['topic'] = $tp;
+        }
+
+        if (array_key_exists('description', $data)) {
+            $d = trim((string)$data['description']);
+            if ($d === '') return self::sendError(400, "El campo 'description' no puede ser vacío.");
+            $payload['description'] = $d;
+        }
+
+        if (array_key_exists('id_level', $data)) {
+            if (!is_numeric($data['id_level'])) {
+                return self::sendError(400, "El campo 'id_level' debe ser numérico.");
+            }
+            $payload['id_level'] = (int)$data['id_level'];
+        }
+
+        if (empty($payload)) return self::sendError(400, "No hay campos válidos para actualizar.");
+
+        try {
+            $model = new ReadingComprehensionTemplate();
+            $existente = $model->obtenerPorId($id);
+            if (!$existente) return self::sendError(404, "No se encontró la plantilla con id: $id");
+
+            $actualizado = $model->actualizarPorId($id, $payload);
+
+            if ($actualizado) {
+                $nuevo = $model->obtenerPorId($id);
+                http_response_code(200);
+                echo json_encode([
+                    "message" => "Plantilla actualizada exitosamente.",
+                    "reading_comprehension_template" => $nuevo
+                ]);
+            } else {
+                self::sendError(500, "Error interno al intentar actualizar.");
+            }
+        } catch (Exception $e) {
+            self::sendError(500, "Error al actualizar la plantilla.", $e);
+        }
+    }
+
+    // Soft delete
+    public static function deleteOne($id)
+    {
+        if (!is_numeric($id)) return self::sendError(400, "El id debe ser numérico.");
+
+        try {
+            $model = new ReadingComprehensionTemplate();
+            $item = $model->obtenerPorId($id);
+            if (!$item) return self::sendError(404, "No se encontró la plantilla con id: $id");
+
+            $deleted = $model->eliminarPorId($id);
+
+            if ($deleted) {
+                http_response_code(200);
+                echo json_encode([
+                    "message" => "Plantilla eliminada exitosamente (soft delete).",
+                    "reading_comprehension_template" => $item
+                ]);
+            } else {
+                self::sendError(500, "Error interno al intentar eliminar.");
+            }
+        } catch (Exception $e) {
+            self::sendError(500, "Error al eliminar la plantilla.", $e);
+        }
+    }
+
+    // Restore
+    public static function restore($id)
+    {
+        if (!is_numeric($id)) return self::sendError(400, "El id debe ser numérico.");
+
+        try {
+            $model = new ReadingComprehensionTemplate();
+            $restored = $model->restaurarPorId($id);
+
+            if ($restored) {
+                http_response_code(200);
+                echo json_encode([
+                    "message" => "Plantilla restaurada exitosamente.",
+                    "reading_comprehension_template_id" => (int)$id
+                ]);
+            } else {
+                self::sendError(500, "Error interno al intentar restaurar.");
+            }
+        } catch (Exception $e) {
+            self::sendError(500, "Error al restaurar la plantilla.", $e);
+        }
+    }
+
+    // Hard delete
+    public static function deletePermanent($id)
+    {
+        if (!is_numeric($id)) return self::sendError(400, "El id debe ser numérico.");
+
+        try {
+            $model = new ReadingComprehensionTemplate();
+            $deleted = $model->eliminarPermanentePorId($id);
+
+            if ($deleted) {
+                http_response_code(200);
+                echo json_encode([
+                    "message" => "Plantilla eliminada permanentemente.",
+                    "reading_comprehension_template_id" => (int)$id
+                ]);
+            } else {
+                self::sendError(500, "Error interno al intentar eliminar permanentemente.");
+            }
+        } catch (Exception $e) {
+            self::sendError(500, "Error al eliminar permanentemente la plantilla.", $e);
+        }
+    }
+
+    // Helper
+    private static function sendError($code, $message, $exception = null)
+    {
+        http_response_code($code);
+        $response = ["error" => $message];
+        if (getenv('APP_ENV') === 'development' && $exception) {
+            $response["details"] = $exception->getMessage();
+        }
+        echo json_encode($response);
+    }
+}
