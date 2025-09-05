@@ -1,18 +1,18 @@
 <?php
-require_once __DIR__ . '/../models/GapFillOption.php';
+require_once __DIR__ . '/../models/OpenClozeOption.php';
 
-class GapFillOptionController
+class OpenClozeOptionController
 {
     // Listar
     public static function getAll()
     {
         try {
-            $model = new GapFillOption();
+            $model = new OpenClozeOption();
             $items = $model->obtenerTodos();
             http_response_code(200);
             echo json_encode($items);
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener los registros de gap_fill_option.", $e);
+            self::sendError(500, "Error al obtener los registros de open_cloze_option.", $e);
         }
     }
 
@@ -22,43 +22,43 @@ class GapFillOptionController
         if (!is_numeric($id)) return self::sendError(400, "El id debe ser numérico.");
 
         try {
-            $model = new GapFillOption();
+            $model = new OpenClozeOption();
             $item = $model->obtenerPorId($id);
 
             if ($item) {
                 http_response_code(200);
                 echo json_encode($item);
             } else {
-                self::sendError(404, "Opción de gap fill no encontrada.");
+                self::sendError(404, "Opción de open cloze no encontrada.");
             }
         } catch (Exception $e) {
             self::sendError(500, "Error al obtener el registro.", $e);
         }
     }
 
-    // Obtener por id_gap_fill_template
-    public static function getByTemplate($id_gap_fill_template)
+    // Obtener por id_generator_open_cloze_question_keys
+    public static function getByGeneratorKey($id_generator_key)
     {
-        if (!is_numeric($id_gap_fill_template)) {
-            return self::sendError(400, "El id_gap_fill_template debe ser numérico.");
+        if (!is_numeric($id_generator_key)) {
+            return self::sendError(400, "El id_generator_open_cloze_question_keys debe ser numérico.");
         }
 
         try {
-            $model = new GapFillOption();
-            $items = $model->obtenerPorTemplate($id_gap_fill_template);
+            $model = new OpenClozeOption();
+            $items = $model->obtenerPorKey($id_generator_key);
             http_response_code(200);
             echo json_encode($items);
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener por template.", $e);
+            self::sendError(500, "Error al obtener por id_generator_open_cloze_question_keys.", $e);
         }
     }
 
     // Crear
     public static function create($data)
     {
-        if (!isset($data['id_gap_fill_template']) || !is_numeric($data['id_gap_fill_template'])) {
+        if (!isset($data['id_generator_open_cloze_question_keys']) || !is_numeric($data['id_generator_open_cloze_question_keys'])) {
             http_response_code(400);
-            echo json_encode(["error" => "El campo 'id_gap_fill_template' es obligatorio y debe ser numérico"]);
+            echo json_encode(["error" => "El campo 'id_generator_open_cloze_question_keys' es obligatorio y debe ser numérico"]);
             return;
         }
         if (!isset($data['description']) || trim($data['description']) === '') {
@@ -68,9 +68,9 @@ class GapFillOptionController
         }
 
         try {
-            $model = new GapFillOption();
+            $model = new OpenClozeOption();
             $creado = $model->crear([
-                'id_gap_fill_template' => (int)$data['id_gap_fill_template'],
+                'id_generator_open_cloze_question_keys' => (int)$data['id_generator_open_cloze_question_keys'],
                 'description' => trim($data['description']),
             ]);
 
@@ -78,8 +78,8 @@ class GapFillOptionController
                 http_response_code(201);
                 echo json_encode([
                     "message" => "Opción creada exitosamente.",
-                    "gap_fill_option" => [
-                        "id_gap_fill_template" => (int)$data['id_gap_fill_template'],
+                    "open_cloze_option" => [
+                        "id_generator_open_cloze_question_keys" => (int)$data['id_generator_open_cloze_question_keys'],
                         "description" => trim($data['description']),
                     ]
                 ]);
@@ -99,11 +99,11 @@ class GapFillOptionController
 
         $payload = [];
 
-        if (array_key_exists('id_gap_fill_template', $data)) {
-            if (!is_numeric($data['id_gap_fill_template'])) {
-                return self::sendError(400, "El campo 'id_gap_fill_template' debe ser numérico.");
+        if (array_key_exists('id_generator_open_cloze_question_keys', $data)) {
+            if (!is_numeric($data['id_generator_open_cloze_question_keys'])) {
+                return self::sendError(400, "El campo 'id_generator_open_cloze_question_keys' debe ser numérico.");
             }
-            $payload['id_gap_fill_template'] = (int)$data['id_gap_fill_template'];
+            $payload['id_generator_open_cloze_question_keys'] = (int)$data['id_generator_open_cloze_question_keys'];
         }
 
         if (array_key_exists('description', $data)) {
@@ -117,7 +117,7 @@ class GapFillOptionController
         if (empty($payload)) return self::sendError(400, "No hay campos válidos para actualizar.");
 
         try {
-            $model = new GapFillOption();
+            $model = new OpenClozeOption();
             $existente = $model->obtenerPorId($id);
             if (!$existente) return self::sendError(404, "No se encontró la opción con id: $id");
 
@@ -128,7 +128,7 @@ class GapFillOptionController
                 http_response_code(200);
                 echo json_encode([
                     "message" => "Opción actualizada exitosamente.",
-                    "gap_fill_option" => $nuevo
+                    "open_cloze_option" => $nuevo
                 ]);
             } else {
                 self::sendError(500, "Error interno al intentar actualizar.");
@@ -144,7 +144,7 @@ class GapFillOptionController
         if (!is_numeric($id)) return self::sendError(400, "El id debe ser numérico.");
 
         try {
-            $model = new GapFillOption();
+            $model = new OpenClozeOption();
             $item = $model->obtenerPorId($id);
             if (!$item) return self::sendError(404, "No se encontró la opción con id: $id");
 
@@ -154,7 +154,7 @@ class GapFillOptionController
                 http_response_code(200);
                 echo json_encode([
                     "message" => "Opción eliminada exitosamente.",
-                    "gap_fill_option" => $item
+                    "open_cloze_option" => $item
                 ]);
             } else {
                 self::sendError(500, "Error interno al intentar eliminar.");
@@ -168,12 +168,12 @@ class GapFillOptionController
     public static function truncate()
     {
         try {
-            $model = new GapFillOption();
+            $model = new OpenClozeOption();
             $model->vaciarTabla();
             http_response_code(200);
-            echo json_encode(["message" => "Tabla gap_fill_option vaciada exitosamente."]);
+            echo json_encode(["message" => "Tabla open_cloze_option vaciada exitosamente."]);
         } catch (Exception $e) {
-            self::sendError(500, "Error al vaciar la tabla gap_fill_option.", $e);
+            self::sendError(500, "Error al vaciar la tabla open_cloze_option.", $e);
         }
     }
 

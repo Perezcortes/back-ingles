@@ -79,7 +79,7 @@ class ExamTypeController
             return self::sendError(400, "Se requiere al menos un campo para actualizar el tipo de examen.");
         }
 
-        // Solo permitimos actualizar exam_name si viene
+        //solo se actualiza exam_name si viene
         $payload = [];
         if (array_key_exists('exam_name', $data)) {
             if (trim((string)$data['exam_name']) === '') {
@@ -151,7 +151,7 @@ class ExamTypeController
         }
     }
 
-    // Restore (opcional, si lo usas en rutas)
+    // Restore
     public static function restore($id)
     {
         if (!is_numeric($id)) {
@@ -176,7 +176,7 @@ class ExamTypeController
         }
     }
 
-    // Hard delete (opcional, si lo usas en rutas)
+    //hard delete
     public static function deletePermanent($id)
     {
         if (!is_numeric($id)) {

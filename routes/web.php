@@ -268,3 +268,85 @@ Route::get('/gap-fill-question/getByTemplate/{id_gap_fill_template}', [GapFillQu
 Route::put('/gap-fill-question/update/{id}', [GapFillQuestionController::class, 'update']);
 Route::delete('/gap-fill-question/deleteOne/{id}', [GapFillQuestionController::class, 'deleteOne']);
 Route::delete('/gap-fill-question/truncate', [GapFillQuestionController::class, 'truncate']);
+
+// Rutas para OpenClozeTemplate
+Route::post('/open-cloze-template/create', [OpenClozeTemplateController::class, 'create']);
+Route::get('/open-cloze-template/getOne/{id}', [OpenClozeTemplateController::class, 'getOne']);
+Route::get('/open-cloze-template/getAll', [OpenClozeTemplateController::class, 'getAll']);
+Route::get('/open-cloze-template/getByLevel/{id_level}', [OpenClozeTemplateController::class, 'getByLevel']);
+Route::put('/open-cloze-template/update/{id}', [OpenClozeTemplateController::class, 'update']);
+Route::delete('/open-cloze-template/deleteOne/{id}', [OpenClozeTemplateController::class, 'deleteOne']);
+Route::post('/open-cloze-template/restore/{id}', [OpenClozeTemplateController::class, 'restore']);
+Route::delete('/open-cloze-template/deletePermanent/{id}', [OpenClozeTemplateController::class, 'deletePermanent']);
+
+// Rutas para OpenClozeQuestion
+Route::post('/open-cloze-question/create', [OpenClozeQuestionController::class, 'create']);
+Route::get('/open-cloze-question/getOne/{id}', [OpenClozeQuestionController::class, 'getOne']);
+Route::get('/open-cloze-question/getAll', [OpenClozeQuestionController::class, 'getAll']);
+Route::get('/open-cloze-question/getByTemplate/{id_open_cloze_template}', [OpenClozeQuestionController::class, 'getByTemplate']);
+Route::put('/open-cloze-question/update/{id}', [OpenClozeQuestionController::class, 'update']);
+Route::delete('/open-cloze-question/deleteOne/{id}', [OpenClozeQuestionController::class, 'deleteOne']);
+Route::post('/open-cloze-question/restore/{id}', [OpenClozeQuestionController::class, 'restore']);
+Route::delete('/open-cloze-question/deletePermanent/{id}', [OpenClozeQuestionController::class, 'deletePermanent']);
+
+// Rutas para GeneratorOpenClozeQuestionKey
+Route::post('/generator-open-cloze-question-keys/create', [GeneratorOpenClozeQuestionKeyController::class, 'create']);
+Route::get('/generator-open-cloze-question-keys/getOne/{id}', [GeneratorOpenClozeQuestionKeyController::class, 'getOne']);
+Route::get('/generator-open-cloze-question-keys/getAll', [GeneratorOpenClozeQuestionKeyController::class, 'getAll']);
+Route::get('/generator-open-cloze-question-keys/getByQuestion/{id_open_cloze_question}', [GeneratorOpenClozeQuestionKeyController::class, 'getByQuestion']);
+Route::put('/generator-open-cloze-question-keys/update/{id}', [GeneratorOpenClozeQuestionKeyController::class, 'update']);
+Route::delete('/generator-open-cloze-question-keys/deleteOne/{id}', [GeneratorOpenClozeQuestionKeyController::class, 'deleteOne']);
+Route::post('/generator-open-cloze-question-keys/restore/{id}', [GeneratorOpenClozeQuestionKeyController::class, 'restore']);
+Route::delete('/generator-open-cloze-question-keys/deletePermanent/{id}', [GeneratorOpenClozeQuestionKeyController::class, 'deletePermanent']);
+Route::delete('/generator-open-cloze-question-keys/truncate', [GeneratorOpenClozeQuestionKeyController::class, 'truncate']);
+
+// Rutas para OpenClozeOption
+Route::post('/open-cloze-option/create', [OpenClozeOptionController::class, 'create']);
+Route::get('/open-cloze-option/getOne/{id}', [OpenClozeOptionController::class, 'getOne']);
+Route::get('/open-cloze-option/getAll', [OpenClozeOptionController::class, 'getAll']);
+Route::get('/open-cloze-option/getByGeneratorKey/{id_generator_open_cloze_question_keys}', [OpenClozeOptionController::class, 'getByGeneratorKey']);
+Route::put('/open-cloze-option/update/{id}', [OpenClozeOptionController::class, 'update']);
+Route::delete('/open-cloze-option/deleteOne/{id}', [OpenClozeOptionController::class, 'deleteOne']);
+Route::delete('/open-cloze-option/truncate', [OpenClozeOptionController::class, 'truncate']);
+
+// Rutas para TemplateMultipleChoiceCloze
+Route::post('/template-mcc/create', [TemplateMultipleChoiceClozeController::class, 'create']);
+Route::get('/template-mcc/getOne/{id}', [TemplateMultipleChoiceClozeController::class, 'getOne']);
+Route::get('/template-mcc/getAll', [TemplateMultipleChoiceClozeController::class, 'getAll']);
+Route::get('/template-mcc/getByLevel/{id_level}', [TemplateMultipleChoiceClozeController::class, 'getByLevel']);
+Route::put('/template-mcc/update/{id}', [TemplateMultipleChoiceClozeController::class, 'update']);
+Route::delete('/template-mcc/deleteOne/{id}', [TemplateMultipleChoiceClozeController::class, 'deleteOne']);
+Route::post('/template-mcc/restore/{id}', [TemplateMultipleChoiceClozeController::class, 'restore']);
+Route::delete('/template-mcc/deletePermanent/{id}', [TemplateMultipleChoiceClozeController::class, 'deletePermanent']);
+Route::delete('/template-mcc/truncate', [TemplateMultipleChoiceClozeController::class, 'truncate']); // si agregas el método en el controller
+
+// Rutas para MultipleChoiceCloze
+Route::post('/multiple-choice-cloze/create', [MultipleChoiceClozeController::class, 'create']);
+Route::get('/multiple-choice-cloze/getOne/{id}', [MultipleChoiceClozeController::class, 'getOne']);
+Route::get('/multiple-choice-cloze/getAll', [MultipleChoiceClozeController::class, 'getAll']);
+Route::get('/multiple-choice-cloze/getByTemplate/{id_template_multiple_choice_cloze}', [MultipleChoiceClozeController::class, 'getByTemplate']);
+Route::put('/multiple-choice-cloze/update/{id}', [MultipleChoiceClozeController::class, 'update']);
+Route::delete('/multiple-choice-cloze/deleteOne/{id}', [MultipleChoiceClozeController::class, 'deleteOne']);
+Route::post('/multiple-choice-cloze/restore/{id}', [MultipleChoiceClozeController::class, 'restore']);
+Route::delete('/multiple-choice-cloze/deletePermanent/{id}', [MultipleChoiceClozeController::class, 'deletePermanent']);
+Route::delete('/multiple-choice-cloze/truncate', [MultipleChoiceClozeController::class, 'truncate']);
+
+// Rutas para QuestionNumber
+Route::post('/question-number/create', [QuestionNumberController::class, 'create']);
+Route::get('/question-number/getOne/{id}', [QuestionNumberController::class, 'getOne']);
+Route::get('/question-number/getAll', [QuestionNumberController::class, 'getAll']);
+Route::get('/question-number/getByMultipleChoiceCloze/{id_multiple_choice_cloze}', [QuestionNumberController::class, 'getByMultipleChoiceCloze']);
+Route::put('/question-number/update/{id}', [QuestionNumberController::class, 'update']);
+Route::delete('/question-number/deleteOne/{id}', [QuestionNumberController::class, 'deleteOne']);
+Route::post('/question-number/restore/{id}', [QuestionNumberController::class, 'restore']);
+Route::delete('/question-number/deletePermanent/{id}', [QuestionNumberController::class, 'deletePermanent']);
+Route::delete('/question-number/truncate', [QuestionNumberController::class, 'truncate']);
+
+// Rutas para OptionsMultipleChoiceCloze
+Route::post('/options-multiple-choice-cloze/create', [OptionsMultipleChoiceClozeController::class, 'create']);
+Route::get('/options-multiple-choice-cloze/getOne/{id}', [OptionsMultipleChoiceClozeController::class, 'getOne']);
+Route::get('/options-multiple-choice-cloze/getAll', [OptionsMultipleChoiceClozeController::class, 'getAll']);
+Route::get('/options-multiple-choice-cloze/getByQuestionNumber/{id_question_number}', [OptionsMultipleChoiceClozeController::class, 'getByQuestionNumber']);
+Route::put('/options-multiple-choice-cloze/update/{id}', [OptionsMultipleChoiceClozeController::class, 'update']);
+Route::delete('/options-multiple-choice-cloze/deleteOne/{id}', [OptionsMultipleChoiceClozeController::class, 'deleteOne']);
+Route::delete('/options-multiple-choice-cloze/truncate', [OptionsMultipleChoiceClozeController::class, 'truncate']);

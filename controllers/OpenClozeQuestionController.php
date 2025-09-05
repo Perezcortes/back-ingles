@@ -1,18 +1,18 @@
 <?php
-require_once __DIR__ . '/../models/GapFillQuestion.php';
+require_once __DIR__ . '/../models/OpenClozeQuestion.php';
 
-class GapFillQuestionController
+class OpenClozeQuestionController
 {
-    // Listar todo
+    // Listar activos
     public static function getAll()
     {
         try {
-            $model = new GapFillQuestion();
+            $model = new OpenClozeQuestion();
             $items = $model->obtenerTodos();
             http_response_code(200);
             echo json_encode($items);
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener los registros de gap_fill_question.", $e);
+            self::sendError(500, "Error al obtener los registros de open_cloze_question.", $e);
         }
     }
 
@@ -22,30 +22,30 @@ class GapFillQuestionController
         if (!is_numeric($id)) return self::sendError(400, "El id debe ser numérico.");
 
         try {
-            $model = new GapFillQuestion();
+            $model = new OpenClozeQuestion();
             $item = $model->obtenerPorId($id);
 
             if ($item) {
                 http_response_code(200);
                 echo json_encode($item);
             } else {
-                self::sendError(404, "Pregunta de gap fill no encontrada.");
+                self::sendError(404, "Pregunta de open cloze no encontrada.");
             }
         } catch (Exception $e) {
             self::sendError(500, "Error al obtener el registro.", $e);
         }
     }
 
-    // Obtener por id_gap_fill_template
-    public static function getByTemplate($id_gap_fill_template)
+    // Obtener por id_open_cloze_template (activos)
+    public static function getByTemplate($id_open_cloze_template)
     {
-        if (!is_numeric($id_gap_fill_template)) {
-            return self::sendError(400, "El id_gap_fill_template debe ser numérico.");
+        if (!is_numeric($id_open_cloze_template)) {
+            return self::sendError(400, "El id_open_cloze_template debe ser numérico.");
         }
 
         try {
-            $model = new GapFillQuestion();
-            $items = $model->obtenerPorTemplate($id_gap_fill_template);
+            $model = new OpenClozeQuestion();
+            $items = $model->obtenerPorTemplate($id_open_cloze_template);
             http_response_code(200);
             echo json_encode($items);
         } catch (Exception $e) {
@@ -67,28 +67,28 @@ class GapFillQuestionController
             echo json_encode(["error" => "El campo 'counter' es obligatorio y debe ser numérico"]);
             return;
         }
-        if (!isset($data['id_gap_fill_template']) || !is_numeric($data['id_gap_fill_template'])) {
+        if (!isset($data['id_open_cloze_template']) || !is_numeric($data['id_open_cloze_template'])) {
             http_response_code(400);
-            echo json_encode(["error" => "El campo 'id_gap_fill_template' es obligatorio y debe ser numérico"]);
+            echo json_encode(["error" => "El campo 'id_open_cloze_template' es obligatorio y debe ser numérico"]);
             return;
         }
 
         try {
-            $model = new GapFillQuestion();
+            $model = new OpenClozeQuestion();
             $creado = $model->crear([
                 'texto' => trim($data['texto']),
                 'counter' => (int)$data['counter'],
-                'id_gap_fill_template' => (int)$data['id_gap_fill_template'],
+                'id_open_cloze_template' => (int)$data['id_open_cloze_template'],
             ]);
 
             if ($creado) {
                 http_response_code(201);
                 echo json_encode([
-                    "message" => "Pregunta de gap fill creada exitosamente.",
-                    "gap_fill_question" => [
+                    "message" => "Pregunta de open cloze creada exitosamente.",
+                    "open_cloze_question" => [
                         "texto" => trim($data['texto']),
                         "counter" => (int)$data['counter'],
-                        "id_gap_fill_template" => (int)$data['id_gap_fill_template'],
+                        "id_open_cloze_template" => (int)$data['id_open_cloze_template'],
                     ]
                 ]);
             } else {
@@ -120,17 +120,17 @@ class GapFillQuestionController
             $payload['counter'] = (int)$data['counter'];
         }
 
-        if (array_key_exists('id_gap_fill_template', $data)) {
-            if (!is_numeric($data['id_gap_fill_template'])) {
-                return self::sendError(400, "El campo 'id_gap_fill_template' debe ser numérico.");
+        if (array_key_exists('id_open_cloze_template', $data)) {
+            if (!is_numeric($data['id_open_cloze_template'])) {
+                return self::sendError(400, "El campo 'id_open_cloze_template' debe ser numérico.");
             }
-            $payload['id_gap_fill_template'] = (int)$data['id_gap_fill_template'];
+            $payload['id_open_cloze_template'] = (int)$data['id_open_cloze_template'];
         }
 
         if (empty($payload)) return self::sendError(400, "No hay campos válidos para actualizar.");
 
         try {
-            $model = new GapFillQuestion();
+            $model = new OpenClozeQuestion();
             $existente = $model->obtenerPorId($id);
             if (!$existente) return self::sendError(404, "No se encontró la pregunta con id: $id");
 
@@ -140,8 +140,8 @@ class GapFillQuestionController
                 $nuevo = $model->obtenerPorId($id);
                 http_response_code(200);
                 echo json_encode([
-                    "message" => "Pregunta actualizada exitosamente.",
-                    "gap_fill_question" => $nuevo
+                    "message" => "Pregunta de open cloze actualizada exitosamente.",
+                    "open_cloze_question" => $nuevo
                 ]);
             } else {
                 self::sendError(500, "Error interno al intentar actualizar.");
@@ -151,13 +151,13 @@ class GapFillQuestionController
         }
     }
 
-    // Delete (hard delete)
+    // Soft delete
     public static function deleteOne($id)
     {
         if (!is_numeric($id)) return self::sendError(400, "El id debe ser numérico.");
 
         try {
-            $model = new GapFillQuestion();
+            $model = new OpenClozeQuestion();
             $item = $model->obtenerPorId($id);
             if (!$item) return self::sendError(404, "No se encontró la pregunta con id: $id");
 
@@ -166,8 +166,8 @@ class GapFillQuestionController
             if ($deleted) {
                 http_response_code(200);
                 echo json_encode([
-                    "message" => "Pregunta eliminada exitosamente.",
-                    "gap_fill_question" => $item
+                    "message" => "Pregunta eliminada exitosamente (soft delete).",
+                    "open_cloze_question" => $item
                 ]);
             } else {
                 self::sendError(500, "Error interno al intentar eliminar.");
@@ -177,16 +177,49 @@ class GapFillQuestionController
         }
     }
 
-    //Vaciar tabla
-    public static function truncate()
+    // Restore (undo soft delete)
+    public static function restore($id)
     {
+        if (!is_numeric($id)) return self::sendError(400, "El id debe ser numérico.");
+
         try {
-            $model = new GapFillQuestion();
-            $model->vaciarTabla();
-            http_response_code(200);
-            echo json_encode(["message" => "Tabla gap_fill_question vaciada exitosamente."]);
+            $model = new OpenClozeQuestion();
+            $restored = $model->restaurarPorId($id);
+
+            if ($restored) {
+                http_response_code(200);
+                echo json_encode([
+                    "message" => "Pregunta restaurada exitosamente.",
+                    "open_cloze_question_id" => (int)$id
+                ]);
+            } else {
+                self::sendError(500, "Error interno al intentar restaurar.");
+            }
         } catch (Exception $e) {
-            self::sendError(500, "Error al vaciar la tabla gap_fill_question.", $e);
+            self::sendError(500, "Error al restaurar el registro.", $e);
+        }
+    }
+
+    // Hard delete
+    public static function deletePermanent($id)
+    {
+        if (!is_numeric($id)) return self::sendError(400, "El id debe ser numérico.");
+
+        try {
+            $model = new OpenClozeQuestion();
+            $deleted = $model->eliminarPermanentePorId($id);
+
+            if ($deleted) {
+                http_response_code(200);
+                echo json_encode([
+                    "message" => "Pregunta eliminada permanentemente.",
+                    "open_cloze_question_id" => (int)$id
+                ]);
+            } else {
+                self::sendError(500, "Error interno al intentar eliminar permanentemente.");
+            }
+        } catch (Exception $e) {
+            self::sendError(500, "Error al eliminar permanentemente el registro.", $e);
         }
     }
 

@@ -192,7 +192,7 @@ class MultipleMatchingController
         }
     }
 
-    // (Opcional) TRUNCATE
+    //TRUNCATE
     public static function truncate()
     {
         try {

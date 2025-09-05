@@ -203,7 +203,7 @@ class SignOptionsController
         }
     }
 
-    // (Opcional) Vaciar tabla
+    //Vaciar tabla
     public static function truncate()
     {
         try {
