@@ -1,8 +1,7 @@
 <?php
-// =================== CONFIGURACIÓN CORS ===================
-$allowedOrigins = ['http://localhost:8094'];
-//agregar mas fuentes de origen si es necesario
-$allowedOrigins = ['http://localhost:8095'];
+// =================== CONFIGURACIÓN CORS DINÁMICA ===================
+// URLs de origen permitidas
+$allowedOrigins = explode(',', getenv('ALLOWED_ORIGINS')); //ALLOWED_ORIGINS viene del env declarado desde el Docker compose
 
 if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'], $allowedOrigins)) {
     header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
