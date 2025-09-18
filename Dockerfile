@@ -15,3 +15,6 @@ RUN docker-php-ext-install pdo pdo_mysql mysqli
 
 # Copia todo lo que esté en el directorio donde se encuentra el Dockerfile.
 COPY . /var/www/html
+
+#Puerto 80 expuesto por default con esta imagen 
+#EXPOSE 80
