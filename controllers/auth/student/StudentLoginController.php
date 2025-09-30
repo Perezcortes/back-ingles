@@ -44,7 +44,7 @@ class StudentLoginController
 
         // Guardar datos de sesión
         $_SESSION['student_id'] = $student['id'];
-        $_SESSION['student_name'] = $student['first_names'] . ' ' . $student['last_name'];
+        $_SESSION['full_name'] = $student['full_name'];
         $_SESSION['login_time'] = time(); // Hora de inicio
 
         http_response_code(200);
@@ -52,7 +52,7 @@ class StudentLoginController
             "message" => "Login exitoso.",
             "student" => [
                 "id" => $student['id'],
-                "name" => $_SESSION['student_name'],
+                "name" => $_SESSION['full_name'],
                 "email" => $student['email'],
                 "matricula" => $student["matricula"],
             ]

@@ -44,7 +44,7 @@ class UserLoginController
 
         // Guardar datos de sesión
         $_SESSION['user_id'] = $user['id'];
-        $_SESSION['user_name'] = $user['first_names'] . ' ' . $user['last_name'];
+        $_SESSION['full_name'] = $user['full_name'];
         $_SESSION['login_time'] = time(); // Hora de inicio
 
         http_response_code(200);
@@ -52,7 +52,7 @@ class UserLoginController
             "message" => "Login exitoso.",
             "user" => [
                 "id" => $user['id'],
-                "name" => $_SESSION['user_name'],
+                "name" => $_SESSION['full_name'],
                 "email" => $user['email'],
                 "is_administrator" => $user['is_administrator'],
                 "is_level_coordinator" => $user['is_level_coordinator'],
