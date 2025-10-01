@@ -8,38 +8,42 @@ class UserLoginController
 
         // Validación básica
         if (empty($data['email']) || empty($data['password'])) {
-            http_response_code(400);
-            echo json_encode(["error" => "'email' y 'password' son obligatorios."]);
+            echo json_encode([
+                "status" => "failure",
+                "message" => "Los campos 'email' y 'password' son obligatorios."]);
             return;
         }
 
         // Validar formato del correo
         if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            http_response_code(400);
-            echo json_encode(["error" => "Email inválido."]);
+            echo json_encode([
+                "status" => "failure",
+                "message" => "Campo 'email' inválido."]);
             return;
         }
 
-        // Buscar estudiante por email
+        // Buscar user por email
         $userModel = new User();
         $user = $userModel->obtenerPorEmail($data['email']);
 
         if (!$user) {
-            http_response_code(401);
-            echo json_encode(["error" => "Credenciales inválidas."]);
+            echo json_encode([
+                "status" => "failure",
+                "message" => "Credenciales inválidas."]);
             return;
         }
 
         // Verificar contraseña en texto plano
         if ($data['password'] !== $user['password']) {
-            http_response_code(401);
-            echo json_encode(["error" => "Credenciales inválidas."]);
+            echo json_encode([
+                "status" => "failure",
+                "message" => "Credenciales inválidas."]);
             return;
         }
 
-        // Configurar duración de la sesión a 3 horas (el parametro es en segundos) 1 miuto=60
-        ini_set('session.gc_maxlifetime', 10800);
-        session_set_cookie_params(10800);
+        // Configurar duración de la sesión a 8 horas (el parametro es en segundos) 1 minuto = 60 segundos
+        ini_set('session.gc_maxlifetime', 28800);
+        session_set_cookie_params(28800);
         session_start();
 
         // Guardar datos de sesión
@@ -47,8 +51,8 @@ class UserLoginController
         $_SESSION['full_name'] = $user['full_name'];
         $_SESSION['login_time'] = time(); // Hora de inicio
 
-        http_response_code(200);
         echo json_encode([
+            "status" => "success",
             "message" => "Login exitoso.",
             "user" => [
                 "id" => $user['id'],
@@ -80,11 +84,13 @@ class UserLoginController
                 setcookie('PHPSESSID', '', time() - 3600, '/');
             }
 
-            http_response_code(200);
-            echo json_encode(["message" => "Logout exitoso."]);
+            echo json_encode([
+                "status" => "success",
+                "message" => "Logout exitoso."]);
         } else {
-            http_response_code(200);
-            echo json_encode(["message" => "Ya estabas deslogueado o no tenías una sesión activa."]);
+            echo json_encode([
+                "status" => "success",
+                "message" => "Ya estabas deslogueado o no tenías una sesión activa."]);
         }
     }
 
