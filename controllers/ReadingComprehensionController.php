@@ -221,7 +221,7 @@ class ReadingComprehensionController
         http_response_code($code);
         $response = ["error" => $message];
         if (getenv('APP_ENV') === 'development' && $exception) {
-            $response["details"] = $exception->getMessage()];
+            $response["details"] = $exception->getMessage();
         }
         echo json_encode($response);
     }
