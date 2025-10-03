@@ -15,7 +15,7 @@ require_once 'controllers/EnglishGroupController.php';
 
 //Login/Logout para Alumnos
 Route::post('/api/v1/student/login', [StudentLoginController::class, 'login']);
-Route::post('/api/v1/student/logout', [StudentLoginController::class, 'logout'], [SessionValidator::class, 'checkStudent']);
+Route::post('/api/v1/student/logout', [StudentLoginController::class, 'logout'], [SessionValidator::class, 'checkStudent']); // Middleware para validar sesión de alumno
 
 //Login/Logout para Profesores/Jefe de nivel/Administrador
 Route::post('/api/v1/user/login', [UserLoginController::class, 'login']);

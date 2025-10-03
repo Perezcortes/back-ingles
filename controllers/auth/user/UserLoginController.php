@@ -87,9 +87,9 @@ class UserLoginController
         ]);
     }
 
-    public function logout()
+    public function logout() // Cerrar sesión del usuario
     {
-        // Lógica de logout 
+        // Logout del usuario
         session_start();
         
         if (isset($_SESSION['user_id'])) {
