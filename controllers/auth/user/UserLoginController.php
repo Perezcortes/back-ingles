@@ -1,97 +1,116 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/models/User.php';
+
+// Incluir los modelos y la entidad necesaria
+require_once 'models/User.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/SessionUser.php';
+require_once 'entities/User.php';
+
+use App\Entities\User as UserEntity;
 
 class UserLoginController
 {
-    public static function login($data)
+    private $userModel;
+    private $sessionUserModel;
+
+    public function __construct()
     {
+        $this->userModel = new User();
+        $this->sessionUserModel = new SessionUser();
+    }
 
-        // Validación básica
-        if (empty($data['email']) || empty($data['password'])) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Los campos 'email' y 'password' son obligatorios."]);
+    public function login()
+    {
+        // Obtener datos del cuerpo de la solicitud
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        // Validar la existencia de los campos
+        if (!isset($data[UserEntity::EMAIL]) || !isset($data[UserEntity::PASSWORD])) {
+            http_response_code(400); // Bad Request
+            echo json_encode(['status' => 'error', 'message' => 'Los campos email y password son obligatorios']);
             return;
         }
 
-        // Validar formato del correo
-        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Campo 'email' inválido."]);
+        $email = $data[UserEntity::EMAIL];
+        $password = $data[UserEntity::PASSWORD];
+
+        // Validar el formato del correo
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Formato de correo invalido']);
             return;
         }
 
-        // Buscar user por email
-        $userModel = new User();
-        $user = $userModel->obtenerPorEmail($data['email']);
+        // Buscar el usuario en la base de datos
+        $user = $this->userModel->findUserByEmail($email);
 
         if (!$user) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Credenciales inválidas."]);
+            http_response_code(401); // Unauthorized
+            echo json_encode(['status' => 'error', 'message' => 'Credenciales invalidas']);
             return;
         }
 
-        // Verificar contraseña en texto plano
-        if ($data['password'] !== $user['password']) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Credenciales inválidas."]);
+        // Verificar la contraseña usando password_verify()
+        //if (!password_verify($password, $user[UserEntity::PASSWORD])) {
+        if ($password !== $user[UserEntity::PASSWORD]) {
+            http_response_code(401);
+            echo json_encode(['status' => 'error', 'message' => 'Credenciales invalidas']);
             return;
         }
 
-        // Configurar duración de la sesión a 8 horas (el parametro es en segundos) 1 minuto = 60 segundos
-        ini_set('session.gc_maxlifetime', 28800);
-        session_set_cookie_params(28800);
+        // Configurar sesión
         session_start();
+        session_regenerate_id(true);
 
-        // Guardar datos de sesión
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['full_name'] = $user['full_name'];
-        $_SESSION['login_time'] = time(); // Hora de inicio
+        $_SESSION['user_id'] = $user[UserEntity::ID];
+        
+        // Registrar la sesión en la tabla `sesion_user`
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown IP';
+        $this->sessionUserModel->createSession([
+            'ip' => $ip,
+            'id_user' => $user[UserEntity::ID]
+        ]);
 
+        // Preparar y devolver la respuesta con los datos requeridos
+        http_response_code(200);
         echo json_encode([
             "status" => "success",
-            "message" => "Login exitoso.",
+            "message" => "Login exitoso",
             "user" => [
-                "id" => $user['id'],
-                "name" => $_SESSION['full_name'],
-                "email" => $user['email'],
-                "is_administrator" => $user['is_administrator'],
-                "is_level_coordinator" => $user['is_level_coordinator'],
-                "is_professor" => $user['is_professor']
+                "id" => (int)$user[UserEntity::ID],
+                "full_name" => $user[UserEntity::FULL_NAME],
+                "office" => $user[UserEntity::OFFICE],
+                "email" => $user[UserEntity::EMAIL],
+                "is_professor" => (int)$user[UserEntity::IS_PROFESSOR],
+                "is_level_coordinator" => (int)$user[UserEntity::IS_LEVEL_COORDINATOR],
+                "is_administrator" => (int)$user[UserEntity::IS_ADMINISTRATOR]
             ]
         ]);
     }
 
-    public static function logout()
+    public function logout()
     {
-        // Si no hay sesion ni cookie.
-        if (session_status() === PHP_SESSION_NONE && isset($_COOKIE[session_name()])) {
-            session_start();
-        }
+        // Lógica de logout 
+        session_start();
+        
+        if (isset($_SESSION['user_id'])) {
+            // Eliminar la sesión de la base de datos (opcional, pero buena práctica)
+            // $this->sessionUserModel->deleteSession($_SESSION['user_id']); dejamos pendiente
 
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            // Elimina variables de sesión
             session_unset();
-
-            // Destruye la sesión en el servidor
             session_destroy();
+            setcookie(session_name(), '', time() - 3600, '/');
 
-            // Borra la cookie de sesión en el navegador
-            if (isset($_COOKIE['PHPSESSID'])) {
-                setcookie('PHPSESSID', '', time() - 3600, '/');
-            }
-
+            http_response_code(200);
             echo json_encode([
                 "status" => "success",
-                "message" => "Logout exitoso."]);
+                "message" => "Logout exitoso."
+            ]);
         } else {
+            http_response_code(200);
             echo json_encode([
                 "status" => "success",
-                "message" => "Ya estabas deslogueado o no tenías una sesión activa."]);
+                "message" => "No tenías una sesión activa."
+            ]);
         }
     }
-
 }
