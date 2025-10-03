@@ -90,7 +90,10 @@ class UserLoginController
     public function logout() // Cerrar sesión del usuario
     {
         // Logout del usuario
-        session_start();
+        // Verificamos si la sesión ya está activa antes de intentar iniciarla
+        if (session_start() === PHP_SESSION_NONE) {
+            session_start();
+        }
         
         if (isset($_SESSION['user_id'])) {
             // Eliminar la sesión de la base de datos (opcional, pero buena práctica)
