@@ -1,100 +1,118 @@
 <?php
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/models/Student.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/SessionStudent.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/Student.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/SessionStudent.php';
+
+use App\Entities\Student as StudentEntity;
+use App\Entities\SessionStudent as SessionStudentEntity;
 
 class StudentLoginController
 {
-    public static function login($data)
+    private $studentModel;
+    private $sessionStudentModel;
+
+    public function __construct()
     {
+        $this->studentModel = new Student();
+        $this->sessionStudentModel = new SessionStudent();
+    }
 
-        // Validación básica
-        if (empty($data['email']) || empty($data['password'])) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Los campos 'email' y 'password' son obligatorios."
-            ]);
+    public function login($data)
+    {
+        if (!isset($data[StudentEntity::EMAIL]) || !isset($data[StudentEntity::PASSWORD])) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Email y password son obligatorios.']);
             return;
         }
 
-        // Validar formato del correo
-        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Campo 'email' inválido."
-            ]);
+        $email = $data[StudentEntity::EMAIL];
+        $password = $data[StudentEntity::PASSWORD];
+        
+        // Verifica que el email tenga un formato válido
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Formato de email inválido.']);
             return;
         }
 
-        // Buscar estudiante por email
-        $studentModel = new Student();
-        $student = $studentModel->obtenerPorEmail($data['email']);
+        $student = $this->studentModel->findStudentByEmail($email);
 
         if (!$student) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Credenciales inválidas."
-            ]);
+            http_response_code(401);
+            echo json_encode(['status' => 'error', 'message' => 'Credenciales inválidas.']);
             return;
         }
 
-        // Verificar contraseña en texto plano
-        if ($data['password'] !== $student['password']) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Credenciales inválidas."
-            ]);
+        // Validación de contraseña en texto plano 
+        if ($password !== $student[StudentEntity::PASSWORD]) {
+            http_response_code(401);
+            echo json_encode(['status' => 'error', 'message' => 'Credenciales inválidas.']);
             return;
         }
 
-        // Configurar duración de la sesión a 3 horas (el parametro es en segundos) 1 minuto = 60 segundos. 
+        // Inicia la sesión
+        session_start();
+        session_regenerate_id(true);
+
+        $_SESSION['student_id'] = $student[StudentEntity::ID];
+
+        // Establece la duración de la cookie de sesión en 3 horas (3 * 60 * 60 segundos)
         ini_set('session.gc_maxlifetime', 10800);
         session_set_cookie_params(10800);
-        session_start();
 
-        // Guardar datos de sesión
-        $_SESSION['student_id'] = $student['id'];
-        $_SESSION['full_name'] = $student['full_name'];
-        $_SESSION['login_time'] = time(); // Hora de inicio
+        // Registra la sesión en la base de datos
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown IP';
+        $this->sessionStudentModel->createSession([
+            SessionStudentEntity::IP => $ip,
+            SessionStudentEntity::ID_STUDENT => $student[StudentEntity::ID]
+        ]);
 
+        http_response_code(200);
         echo json_encode([
             "status" => "success",
-            "message" => "Login exitoso.",
+            "message" => "Login exitoso",
             "student" => [
-                "id" => $student['id'],
-                "name" => $_SESSION['full_name'],
-                "email" => $student['email'],
-                "matricula" => $student["matricula"],
+                "id" => (int)$student[StudentEntity::ID],
+                "full_name" => $student[StudentEntity::FULL_NAME],
+                "id_major" => (int)$student[StudentEntity::ID_MAJOR],
+                "id_level" => (int)$student[StudentEntity::ID_LEVEL],
+                "major_group" => $student[StudentEntity::MAJOR_GROUP],
+                "id_english_class" => (int)$student[StudentEntity::ID_ENGLISH_CLASS],
+                "matricula" => $student[StudentEntity::MATRICULA],
+                "period" => $student[StudentEntity::PERIOD],
+                "email" => $student[StudentEntity::EMAIL]
             ]
         ]);
     }
-
-    public static function logout()
+    
+    public function logout()
     {
-        // Si no hay sesion ni cookie.
-        if (session_status() === PHP_SESSION_NONE && isset($_COOKIE[session_name()])) {
+        // Lógica de logout
+        if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            // Elimina variables de sesión
+        if (isset($_SESSION['student_id'])) {
+            // Opcional: Eliminar la sesión de la tabla sesion_student
+            // $this->sessionStudentModel->deleteSession($_SESSION['student_id']);
+
             session_unset();
-
-            // Destruye la sesión en el servidor
             session_destroy();
+            setcookie(session_name(), '', time() - 3600, '/');
 
-            // Borra la cookie de sesión en el navegador
-            if (isset($_COOKIE['PHPSESSID'])) {
-                setcookie('PHPSESSID', '', time() - 3600, '/');
-            }
-
+            http_response_code(200);
             echo json_encode([
                 "status" => "success",
                 "message" => "Logout exitoso."
             ]);
         } else {
+            http_response_code(200);
             echo json_encode([
                 "status" => "success",
-                "message" => "Ya estabas deslogueado o no tenías una sesión activa."]);
+                "message" => "No tenías una sesión activa."
+            ]);
         }
     }
-
 }
