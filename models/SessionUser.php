@@ -3,7 +3,7 @@
 // models/SessionUser.php
 
 require_once __DIR__ . '/../config/database.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/SessionUser.php';
+require_once __DIR__ . '/../entities/SessionUser.php';
 
 use App\Entities\SessionUser as SessionUserEntity;
 use PDO;
@@ -16,8 +16,8 @@ class SessionUser
 
     public function __construct()
     {
-        $database = new Database();
-        $this->conn = $database->getConnection();
+        //$database = new Database(); Esto evita el error de intentar acceder a un constructor privado
+        $this->conn = Database::getConnection(); //Cambie el constructor para que use el método estático directamente.
         $this->table_name = "sesion_user";
     }
 

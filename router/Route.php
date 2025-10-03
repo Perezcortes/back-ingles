@@ -136,8 +136,12 @@ class Route
                     return;
                 }
 
+                // corrección clave:
+                // Creamos una instancia del controlador, router ahora podrá manejar clases de controlador con métodos no estáticos
+                $instanciaControlador = new $controlador();
+
                 // Ejecutamos el método del controlador, pasando los parámetros dinámicos de la URL y el cuerpo (body)
-                return call_user_func_array([$controlador, $metodoAccion], array_merge($coincidencias, [$body]));
+                return call_user_func_array([$instanciaControlador, $metodoAccion], array_merge($coincidencias, [$body]));
             }
         }
 

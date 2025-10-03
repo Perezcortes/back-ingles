@@ -15,8 +15,8 @@ class User
 
     public function __construct()
     {
-        $database = new Database();
-        $this->conn = $database->getConnection();
+        //$database = new Database(); Esto evita el error de intentar acceder a un constructor privado
+        $this->conn = Database::getConnection(); //Cambie el constructor para que use el método estático directamente.
     }
 
     public function getAll()
