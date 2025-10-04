@@ -73,24 +73,32 @@ class StudentController
         }
     }
 
-    public static function getStudentByEmail($email)
-    {
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return self::sendError(400, "El correo electrónico no es válido.");
+    public function getStudentByEmail($data) { // Ahora recibe los datos del cuerpo de la petición
+        // Validar la existencia y formato del email
+        if (!isset($data[StudentEntity::EMAIL]) || !filter_var($data[StudentEntity::EMAIL], FILTER_VALIDATE_EMAIL)) {
+            $this->sendError(400, "El correo electrónico no es válido.");
+            return;
         }
 
+        $email = $data[StudentEntity::EMAIL];
+
+        // Buscar el alumno por email
         try {
-            $studentModel = new Student();
-            $student = $studentModel->obtenerPorEmail($email);
+            $student = $this->studentModel->findStudentByEmail($email);
 
             if ($student) {
+                unset($student['password']); // Excluye la contraseña de la respuesta
                 http_response_code(200);
-                echo json_encode($student);
+                echo json_encode([
+                    "status" => "success",
+                    "message" => "Alumno encontrado exitosamente",
+                    "student" => $student
+                ]);
             } else {
-                self::sendError(404, "Student no encontrado");
+                $this->sendError(404, "Alumno no encontrado");
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener el registro student", $e);
+            $this->sendError(500, "Error al obtener el registro del alumno.", $e);
         }
     }
 
