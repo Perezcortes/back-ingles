@@ -34,7 +34,7 @@ Route::post('/api/v1/student/create', [StudentController::class, 'create'],);
 Route::get('/api/v1/student/getOne/Id/{id}', [StudentController::class, 'getStudentById'], );
 Route::get('/api/v1/student/getOne/Email/{id}', [StudentController::class, 'getStudentByEmail'], );
 Route::get('/api/v1/student/getOne/Matricula/{id}', [StudentController::class, 'getStudentByMatricula'], );
-Route::get('/api/v1/student/getAll', [StudentController::class, 'getAll'],);
+Route::get('/api/v1/student/getAll', [StudentController::class, 'getAll'], [SessionValidator::class, 'checkUser']);
 Route::put('/api/v1/student/update/{id}', [StudentController::class, 'update'],);
 Route::delete('/api/v1/student/deleteOne/{id}', [StudentController::class, 'deleteOne'],);
 

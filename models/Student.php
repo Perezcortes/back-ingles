@@ -36,6 +36,14 @@ class Student
         
         return false;
     }
+
+    public function getAll()
+    {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE deleted_at IS NULL ORDER BY id ASC"; // Asegurarse de no incluir registros eliminados
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
     
     // Método para encontrar un estudiante por su ID
     public function getById($id) // <-- Nombre del método corregido

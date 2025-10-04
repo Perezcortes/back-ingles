@@ -30,15 +30,20 @@ class StudentController
         $this->englishClassModel = new EnglishClass();
     }
 
-    // Cambiamos el método a no estático
+    // Método para obtener todos los alumnos
     public function getAll()
     {
         try {
-            $students = $this->getAll();
+            $students = $this->studentModel->getAll();
+
             http_response_code(200);
-            echo json_encode($students);
+            echo json_encode([
+                "status" => "success",
+                "message" => "Alumnos encontrados exitosamente",
+                "students" => $students
+            ]);
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener los registros de la tabla.", $e);
+            $this->sendError(500, "Error al obtener los registros de la tabla.", $e);
         }
     }
 
