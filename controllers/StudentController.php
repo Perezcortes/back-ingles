@@ -294,6 +294,26 @@ class StudentController
         }
     }
 
+    // Método para eliminar todos los alumnos lógicamente
+    public function deleteAll()
+    {
+        try {
+            $deleted = $this->studentModel->deleteAll();
+
+            if ($deleted) {
+                http_response_code(200);
+                echo json_encode([
+                    "status" => "success",
+                    "message" => "Alumnos eliminados exitosamente"
+                ]);
+            } else {
+                $this->sendError(500, "Error al eliminar todos los alumnos.");
+            }
+        } catch (Exception $e) {
+            $this->sendError(500, "Error al eliminar todos los alumnos.", $e);
+        }
+    }
+
     // Helper for error response
     private static function sendError($code, $message, $exception = null)
     {

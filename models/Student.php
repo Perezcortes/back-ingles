@@ -103,5 +103,13 @@ class Student
         return $stmt->execute();
     }
 
+    // Método para realizar un borrado lógico masivo (soft delete)
+    public function deleteAll()
+    {
+        $query = "UPDATE " . $this->table_name . " SET deleted_at = NOW() WHERE deleted_at IS NULL";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute();
+    }
+
     // Aquí irían el resto de los métodos (getAll, update, delete, etc.)
 }
