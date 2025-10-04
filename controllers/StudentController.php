@@ -47,25 +47,29 @@ class StudentController
         }
     }
 
-    // Get student by ID
-    public static function getStudentById($id)
-    {
+    public function getStudentById($id) {
+        // Validation: The ID must be a numeric value
         if (!is_numeric($id)) {
-            return self::sendError(400, "El id debe ser numérico.");
+            $this->sendError(400, "El ID debe ser numérico.");
+            return;
         }
 
         try {
-            $studentModel = new Student();
-            $student = $studentModel->obtenerPorId($id);
+            $student = $this->studentModel->getById($id);
 
             if ($student) {
+                unset($student['password']); // remover la contraseña antes de enviar la respuesta
                 http_response_code(200);
-                echo json_encode($student);
+                echo json_encode([
+                    "status" => "success",
+                    "message" => "Alumno encontrado exitosamente",
+                    "student" => $student
+                ]);
             } else {
-                self::sendError(404, "Student no encontrado");
+                $this->sendError(404, "Alumno no encontrado");
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener el registro student", $e);
+            $this->sendError(500, "Error al obtener el registro del alumno.", $e);
         }
     }
 
