@@ -36,7 +36,7 @@ Route::post('/api/v1/student/getOne/email', [StudentController::class, 'getStude
 Route::post('/api/v1/student/getOne/matricula', [StudentController::class, 'getStudentByMatricula'], [SessionValidator::class, 'checkUser']);
 Route::get('/api/v1/student/getAll', [StudentController::class, 'getAll'], [SessionValidator::class, 'checkUser']);
 Route::put('/api/v1/student/update/{id}', [StudentController::class, 'update'], [SessionValidator::class, 'checkUser']);
-Route::delete('/api/v1/student/deleteOne/{id}', [StudentController::class, 'deleteOne'],);
+Route::post('/api/v1/student/deleteOne', [StudentController::class, 'deleteOne'], [SessionValidator::class, 'checkUser']);
 
 // Rutas para user con parámetros dinámicos 
 Route::post('/api/v1/user/create', [UserController::class, 'create'],);

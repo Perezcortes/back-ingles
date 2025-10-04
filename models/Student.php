@@ -93,5 +93,15 @@ class Student
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    // Método para realizar un borrado lógico (soft delete)
+    public function deleteById($id) {
+        $query = "UPDATE " . $this->table_name . " SET deleted_at = NOW() WHERE id = :id";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        
+        return $stmt->execute();
+    }
+
     // Aquí irían el resto de los métodos (getAll, update, delete, etc.)
 }

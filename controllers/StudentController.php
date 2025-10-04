@@ -258,35 +258,39 @@ class StudentController
         }
     }
 
-    public static function deleteOne($id)
-    {
-        if (!is_numeric($id)) {
-            return self::sendError(400, "El id debe ser numérico.");
+    // Método para eliminar un alumno lógicamente
+    public function deleteOne($data) {
+        // Validar el ID en el cuerpo de la petición
+        if (!isset($data['id']) || !is_numeric($data['id'])) {
+            $this->sendError(400, "Se requiere un ID numérico para eliminar el alumno.");
+            return;
         }
 
-        try {
-            $studentModel = new Student();
+        $id = $data['id'];
 
-            // 1. Obtener el registro antes de eliminar
-            $student = $studentModel->obtenerPorId($id);
-            if (!$student) {
-                return self::sendError(404, "No se encontró el nivel con id: $id");
+        // Validar que el alumno exista y no esté ya eliminado
+        try {
+            $existingStudent = $this->studentModel->getById($id);
+            if (!$existingStudent) {
+                $this->sendError(404, "Alumno no encontrado o ya eliminado.");
+                return;
             }
 
-            // 2. Eliminarlo
-            $eliminado = $studentModel->eliminarPorId($id);
+            // Realizar el borrado lógico
+            $deleted = $this->studentModel->deleteById($id);
 
-            if ($eliminado) {
+            if ($deleted) {
                 http_response_code(200);
                 echo json_encode([
-                    "message" => "Student eliminado exitosamente.",
-                    "student" => $student
+                    "status" => "success",
+                    "message" => "Alumno eliminado exitosamente",
+                    "student" => $existingStudent
                 ]);
             } else {
-                self::sendError(500, "Error interno al intentar eliminar el Student.");
+                $this->sendError(500, "Error al eliminar el alumno.");
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al eliminar el Student.", $e);
+            $this->sendError(500, "Error al eliminar el alumno.", $e);
         }
     }
 
