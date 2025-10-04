@@ -1,16 +1,40 @@
 <?php
-require_once __DIR__ . '/../models/Student.php';
 
+// controllers/StudentController.php
 
-class StudentController 
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/Student.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/Major.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/Level.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/EnglishClass.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/Student.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/Major.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/Level.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/EnglishClass.php';
+
+use App\Entities\Student as StudentEntity;
+use App\Entities\EnglishClass as EnglishClassEntity;
+use Exception;
+
+class StudentController
 {
-    // Get all students
-    public static function getAll()
+    private $studentModel;
+    private $majorModel;
+    private $levelModel;
+    private $englishClassModel;
+
+    public function __construct()
+    {
+        $this->studentModel = new Student();
+        $this->majorModel = new Major();
+        $this->levelModel = new Level();
+        $this->englishClassModel = new EnglishClass();
+    }
+
+    // Cambiamos el método a no estático
+    public function getAll()
     {
         try {
-            $studentModel = new Student();
-            $students = $studentModel->obtenerTodos();
-
+            $students = $this->getAll();
             http_response_code(200);
             echo json_encode($students);
         } catch (Exception $e) {
@@ -78,55 +102,86 @@ class StudentController
         }
     }
 
-    public static function create($data)
+    // Método CREATE - Actualizado
+    public function create($data)
     {
         $requiredVars = [
-            'id_major',
-            'id_group_english',
-            'matricula',
-            'first_names',
-            'last_name',
-            'email',
-            'password'
+            StudentEntity::FULL_NAME,
+            StudentEntity::ID_MAJOR,
+            StudentEntity::ID_LEVEL,
+            StudentEntity::MATRICULA,
+            StudentEntity::EMAIL,
+            StudentEntity::PASSWORD
         ];
 
         foreach ($requiredVars as $var) {
             if (!isset($data[$var]) || trim($data[$var]) === '') {
-                http_response_code(400);
-                echo json_encode(["error" => "El campo '$var' es obligatorio."]);
+                //http_response_code(400);
+                $this->sendError(400, "Falta el campo obligatorio: '{$var}'.");
                 return;
             }
         }
 
-        // Validar que id_major e id_class_group_english sean numéricos
-        if (!is_numeric($data['id_major']) || !is_numeric($data['id_group_english'])) {
-            http_response_code(400);
-            echo json_encode(["error" => "Los campos 'id_major' y 'id_group_english' deben ser numéricos."]);
+        // Validación de existencia de IDs relacionados
+        if (!$this->majorModel->getById($data[StudentEntity::ID_MAJOR])) {
+            $this->sendError(404, "El id_major no existe.");
             return;
         }
 
-        // Validar formato del correo
-        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            http_response_code(400);
-            echo json_encode(["error" => "El correo electrónico no es válido."]);
+        if (!$this->levelModel->getById($data[StudentEntity::ID_LEVEL])) {
+            $this->sendError(404, "El id_level no existe.");
             return;
         }
+
+        if (isset($data[StudentEntity::ID_ENGLISH_CLASS]) && $data[StudentEntity::ID_ENGLISH_CLASS] !== null) {
+            if (!$this->englishClassModel->getById($data[StudentEntity::ID_ENGLISH_CLASS])) {
+                http_response_code(404);
+                echo json_encode(["status" => "error", "message" => "El ID de clase de inglés (id_english_class) no existe."]);
+                return;
+            }
+        }
+
+        // Validación de unicidad de email y matrícula
+        if ($this->studentModel->findStudentByEmail($data[StudentEntity::EMAIL])) {
+            $this->sendError(409, "El email ya está en uso.");
+            return;
+        }
+
+        if ($this->studentModel->findStudentByMatricula($data[StudentEntity::MATRICULA])) {
+            $this->sendError(409, "La matrícula ya está en uso.");
+            return;
+        }
+
+        // No se hashea la contraseña por decisión de equipo
+        $studentData = [
+            StudentEntity::FULL_NAME => $data[StudentEntity::FULL_NAME],
+            StudentEntity::ID_MAJOR => $data[StudentEntity::ID_MAJOR],
+            StudentEntity::ID_LEVEL => $data[StudentEntity::ID_LEVEL],
+            StudentEntity::MAJOR_GROUP => $data[StudentEntity::MAJOR_GROUP] ?? null,
+            StudentEntity::ID_ENGLISH_CLASS => $data[StudentEntity::ID_ENGLISH_CLASS] ?? null,
+            StudentEntity::MATRICULA => $data[StudentEntity::MATRICULA],
+            StudentEntity::PERIOD => $data[StudentEntity::PERIOD] ?? null,
+            StudentEntity::EMAIL => $data[StudentEntity::EMAIL],
+            StudentEntity::PASSWORD => $data[StudentEntity::PASSWORD]
+        ];
 
         try {
-            $studentModel = new Student();
-            $creado = $studentModel->crear($data);
-    
-            if ($creado) {
+            $createdId = $this->studentModel->create($studentData);
+            if ($createdId) {
+                $newStudent = $this->studentModel->getById($createdId);
+                unset($newStudent[StudentEntity::PASSWORD]); // Ocultar la contraseña
+
                 http_response_code(201);
                 echo json_encode([
-                    "message" => "Student creado exitosamente.",
-                    "student" => $data
+                    "status" => "success",
+                    "message" => "Alumno creado exitosamente",
+                    "student" => $newStudent
                 ]);
             } else {
-                self::sendError(500, "Error al crear el student.");
+                $this->sendError(500, "Error al crear el estudiante.");
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al crear el student.", $e);
+            $this->sendError(500, "Error al crear el estudiante.", $e);
         }
     }
 
@@ -136,24 +191,24 @@ class StudentController
         if (!is_numeric($id)) {
             return self::sendError(400, "El id debe ser numérico.");
         }
-    
+
         if (empty($data)) {
             return self::sendError(400, "Se requiere al menos un campo para actualizar el estudiante.");
         }
-    
+
         try {
             $studentModel = new Student();
             $studentExistente = $studentModel->obtenerPorId($id);
-    
+
             if (!$studentExistente) {
                 return self::sendError(404, "No se encontró el student con id: $id");
             }
-    
+
             $actualizado = $studentModel->actualizarPorId($id, $data);
-    
+
             if ($actualizado) {
                 $studentActualizado = $studentModel->obtenerPorId($id);
-    
+
                 http_response_code(200);
                 echo json_encode([
                     "message" => "Estudiante actualizado exitosamente",

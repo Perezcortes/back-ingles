@@ -8,7 +8,7 @@ require_once 'controllers/auth/student/StudentLoginController.php';
 require_once 'controllers/auth/user/UserLoginController.php';
 require_once 'middlewares/SessionValidator.php';
 require_once 'controllers/MajorController.php';
-require_once 'controllers/EnglishGroupController.php';
+require_once 'controllers/EnglishClassController.php'; // Renombrado a EnglishClassController antes EnglishGroupController
 
 
 
@@ -47,16 +47,16 @@ Route::put('/api/v1/user/update/{id}', [UserController::class, 'update'],);
 Route::delete('/api/v1/user/deleteOne/{id}', [UserController::class, 'deleteOne'],);
 
 
-// Rutas para EnglishGroup con parámetros dinámicos 
-Route::post('/api/v1/englishGroup/create', [EnglishGroupController::class, 'create']);
-Route::get('/api/v1/englishGroup/getOne/{id}', [EnglishGroupController::class, 'getOne']);
-Route::get('/api/v1/englishGroup/getByProfessor/{id_professor}', [EnglishGroupController::class, 'getByProfessor']);
-Route::get('/api/v1/englishGroup/getByLevel/{id_level}', [EnglishGroupController::class, 'getByLevel']);
-Route::get('/api/v1/englishGroup/getAll', [EnglishGroupController::class, 'getAll']);
-Route::put('/api/v1/englishGroup/update/{id}', [EnglishGroupController::class, 'update']);
-Route::delete('/api/v1/englishGroup/deleteOne/{id}', [EnglishGroupController::class, 'deleteOne']);
-Route::post('/api/v1/englishGroup/restore/{id}', [EnglishGroupController::class, 'restore']); // Para restaurar un grupo
-Route::delete('/api/v1/englishGroup/deletePermanent/{id}', [EnglishGroupController::class, 'deletePermanent']); // Eliminar permanentemente
+// Rutas para EnglishClass con parámetros dinámicos 
+Route::post('/api/v1/englishClass/create', [EnglishClassController::class, 'create']); // Antes EnglishGroupController
+Route::get('/api/v1/englishClass/getOne/{id}', [EnglishClassController::class, 'getOne']);
+Route::get('/api/v1/englishClass/getByProfessor/{id_professor}', [EnglishClassController::class, 'getByProfessor']);
+Route::get('/api/v1/englishClass/getByLevel/{id_level}', [EnglishClassController::class, 'getByLevel']);
+Route::get('/api/v1/englishClass/getAll', [EnglishClassController::class, 'getAll']);
+Route::put('/api/v1/englishClass/update/{id}', [EnglishClassController::class, 'update']);
+Route::delete('/api/v1/englishClass/deleteOne/{id}', [EnglishClassController::class, 'deleteOne']);
+Route::post('/api/v1/englishClass/restore/{id}', [EnglishClassController::class, 'restore']); // Para restaurar un grupo
+Route::delete('/api/v1/englishClass/deletePermanent/{id}', [EnglishClassController::class, 'deletePermanent']); // Eliminar permanentemente
 
 // Rutas para Major con parámetros dinámicos
 Route::post('/api/v1/major/create', [MajorController::class, 'create']);

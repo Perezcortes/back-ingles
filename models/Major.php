@@ -1,12 +1,17 @@
 <?php
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../entities/Major.php';
+
+use App\Entities\Major as MajorEntity;
+use PDO;
 
 class Major {
-    private $conexion;
+    private $conn;
+    private $table_name = "major"; // <-- Propiedad 'table_name' añadida
 
     public function __construct() {
-        $this->conexion = Database::getConnection();
+        $this->conn = Database::getConnection();
     }
 
     public function crear($datos) {
@@ -15,19 +20,21 @@ class Major {
         $valores = array_values($datos);
     
         $sql = "INSERT INTO major (" . implode(',', $campos) . ") VALUES (" . implode(',', $placeholders) . ")";
-        $consulta = $this->conexion->prepare($sql);
+        $consulta = $this->conn->prepare($sql);
         return $consulta->execute($valores);
     }
 
     public function obtenerTodos() {
-        $consulta = $this->conexion->query("SELECT * FROM major WHERE is_deleted = FALSE ORDER BY id ASC");
+        $consulta = $this->conn->query("SELECT * FROM major WHERE is_deleted = FALSE ORDER BY id ASC");
         return $consulta->fetchAll();
     }
 
-    public function obtenerPorId($id) {
-        $consulta = $this->conexion->prepare("SELECT * FROM major WHERE id = ? AND is_deleted = FALSE");
-        $consulta->execute([$id]);
-        return $consulta->fetch();
+    public function getById($id) { // <-- Nombre del método corregido
+        $query = "SELECT * FROM " . $this->table_name . " WHERE " . MajorEntity::ID . " = :id AND " . MajorEntity::DELETED_AT . " IS NULL LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function actualizarPorId($id, $datos) {
@@ -42,30 +49,30 @@ class Major {
         $valores[] = $id; 
     
         $sql = "UPDATE major SET " . implode(", ", $campos) . " WHERE id = ?";
-        $consulta = $this->conexion->prepare($sql);
+        $consulta = $this->conn->prepare($sql);
         return $consulta->execute($valores);
     }
     // RESTORE - Restaurar un registro por ID
     public function restaurarPorId($id) {
-        $consulta = $this->conexion->prepare("UPDATE major SET is_deleted = FALSE, deleted_at = NULL WHERE id = ?");
+        $consulta = $this->conn->prepare("UPDATE major SET is_deleted = FALSE, deleted_at = NULL WHERE id = ?");
         return $consulta->execute([$id]);
     }
 
     // DELETE - Parte del soft delete (marcar como eliminado un elemento)
     public function eliminarPorId($id) {
-        $consulta = $this->conexion->prepare("UPDATE major SET is_deleted = TRUE, deleted_at = NOW() WHERE id = ?");
+        $consulta = $this->conn->prepare("UPDATE major SET is_deleted = TRUE, deleted_at = NOW() WHERE id = ?");
         return $consulta->execute([$id]);
     }
 
     // DELETE - es del Hard delete (eliminar permanentemente un elemento)
     public function eliminarPermanentePorId($id) {
-        $consulta = $this->conexion->prepare("DELETE FROM major WHERE id = ?");
+        $consulta = $this->conn->prepare("DELETE FROM major WHERE id = ?");
         return $consulta->execute([$id]);
     }
 
     // DELETE - Hard delete para vaciar la tabla
     public function vaciarTabla() {
-        $consulta = $this->conexion->query("TRUNCATE TABLE major");
+        $consulta = $this->conn->query("TRUNCATE TABLE major");
         return $consulta;
     }
 }
