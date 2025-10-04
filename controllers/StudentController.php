@@ -215,39 +215,46 @@ class StudentController
     }
 
 
-    public static function update($id, $data)
-    {
+    // Método para actualizar un alumno
+    public function update($id, $data) {
+        // Validar el ID
         if (!is_numeric($id)) {
-            return self::sendError(400, "El id debe ser numérico.");
+            $this->sendError(400, "El ID debe ser numérico.");
+            return;
         }
 
+        // Validar que al menos un campo para actualizar esté presente
         if (empty($data)) {
-            return self::sendError(400, "Se requiere al menos un campo para actualizar el estudiante.");
+            $this->sendError(400, "Se requiere al menos un campo para actualizar.");
+            return;
         }
 
+        // Validar que el alumno exista
         try {
-            $studentModel = new Student();
-            $studentExistente = $studentModel->obtenerPorId($id);
-
-            if (!$studentExistente) {
-                return self::sendError(404, "No se encontró el student con id: $id");
+            $existingStudent = $this->studentModel->getById($id);
+            if (!$existingStudent) {
+                $this->sendError(404, "Alumno no encontrado.");
+                return;
             }
 
-            $actualizado = $studentModel->actualizarPorId($id, $data);
+            // Lógica para manejar la actualización
+            $updated = $this->studentModel->updateById($id, $data);
 
-            if ($actualizado) {
-                $studentActualizado = $studentModel->obtenerPorId($id);
+            if ($updated) {
+                $updatedStudent = $this->studentModel->getById($id);
+                unset($updatedStudent['password']); // Excluye la contraseña de la respuesta
 
                 http_response_code(200);
                 echo json_encode([
-                    "message" => "Estudiante actualizado exitosamente",
-                    "student" => $studentActualizado
+                    "status" => "success",
+                    "message" => "Alumno actualizado exitosamente",
+                    "student" => $updatedStudent
                 ]);
             } else {
-                self::sendError(500, "Error interno al intentar actualizar el student.");
+                $this->sendError(500, "Error al actualizar el alumno.");
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al actualizar el student", $e);
+            $this->sendError(500, "Error al actualizar el alumno.", $e);
         }
     }
 

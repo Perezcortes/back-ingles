@@ -37,6 +37,24 @@ class Student
         return false;
     }
 
+    // Método para actualizar un estudiante por ID
+    public function updateById($id, $data) {
+        $setClauses = [];
+        foreach ($data as $key => $value) {
+            $setClauses[] = "{$key} = :{$key}";
+        }
+        $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $setClauses) . " WHERE id = :id";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        
+        foreach ($data as $key => &$value) {
+            $stmt->bindParam(":" . $key, $value);
+        }
+
+        return $stmt->execute();
+    }
+
     public function getAll()
     {
         $query = "SELECT * FROM " . $this->table_name . " WHERE deleted_at IS NULL ORDER BY id ASC"; // Asegurarse de no incluir registros eliminados
