@@ -102,20 +102,32 @@ class StudentController
         }
     }
 
-    public static function getStudentByMatricula($matricula)
-    {
+    public function getStudentByMatricula($data) { // Ahora recibe los datos del cuerpo de la petición
+        // Validar la existencia de la matrícula
+        if (!isset($data[StudentEntity::MATRICULA]) || empty($data[StudentEntity::MATRICULA])) {
+            $this->sendError(400, "El campo 'matricula' es obligatorio.");
+            return;
+        }
+
+        $matricula = $data[StudentEntity::MATRICULA];
+
+        // Buscar el alumno por matrícula
         try {
-            $studentModel = new Student();
-            $student = $studentModel->obtenerPorMatricula($matricula);
+            $student = $this->studentModel->findStudentByMatricula($matricula);
 
             if ($student) {
+                unset($student['password']); // Excluye la contraseña de la respuesta
                 http_response_code(200);
-                echo json_encode($student);
+                echo json_encode([
+                    "status" => "success",
+                    "message" => "Alumno encontrado exitosamente",
+                    "student" => $student
+                ]);
             } else {
-                self::sendError(404, "Student no encontrado");
+                $this->sendError(404, "Alumno no encontrado");
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener el registro student", $e);
+            $this->sendError(500, "Error al obtener el registro del alumno.", $e);
         }
     }
 

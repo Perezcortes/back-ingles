@@ -33,7 +33,7 @@ Route::delete('/api/v1/level/deleteOne/{id}', [LevelController::class, 'deleteOn
 Route::post('/api/v1/student/create', [StudentController::class, 'create'],);
 Route::get('/api/v1/student/getOne/Id/{id}', [StudentController::class, 'getStudentById'], [SessionValidator::class, 'checkUser']);
 Route::post('/api/v1/student/getOne/email', [StudentController::class, 'getStudentByEmail'], [SessionValidator::class, 'checkUser']);
-Route::get('/api/v1/student/getOne/Matricula/{id}', [StudentController::class, 'getStudentByMatricula'], );
+Route::post('/api/v1/student/getOne/matricula', [StudentController::class, 'getStudentByMatricula'], [SessionValidator::class, 'checkUser']);
 Route::get('/api/v1/student/getAll', [StudentController::class, 'getAll'], [SessionValidator::class, 'checkUser']);
 Route::put('/api/v1/student/update/{id}', [StudentController::class, 'update'],);
 Route::delete('/api/v1/student/deleteOne/{id}', [StudentController::class, 'deleteOne'],);
