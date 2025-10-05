@@ -29,7 +29,7 @@ class StudentLoginController
     public function login($data)
     {
         if (!isset($data[StudentEntity::EMAIL]) || !isset($data[StudentEntity::PASSWORD])) {
-            $this->responseHandler->sendFailure("Email y password son obligatorios.", 400);
+            $this->responseHandler->sendFailure("Los campos 'email' y 'password' son obligatorios", 400);
             return;
         }
 

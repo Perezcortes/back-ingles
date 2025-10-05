@@ -31,7 +31,7 @@ class UserLoginController
         $data = json_decode(file_get_contents("php://input"), true);
         
         if (!isset($data[UserEntity::EMAIL]) || !isset($data[UserEntity::PASSWORD])) {
-            $this->responseHandler->sendFailure("Los campos email y password son obligatorios", 400);
+            $this->responseHandler->sendFailure("Los campos 'email' y 'password' son obligatorios", 400);
             return;
         }
 
