@@ -6,6 +6,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/models/Student.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/models/Major.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/models/Level.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/models/EnglishClass.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/User.php'; // Agregamos User para la validación
 require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/Student.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/Major.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/Level.php';
@@ -21,6 +22,7 @@ class StudentController
     private $majorModel;
     private $levelModel;
     private $englishClassModel;
+    private $userModel; // Modelo User para validaciones
 
     public function __construct()
     {
@@ -28,6 +30,7 @@ class StudentController
         $this->majorModel = new Major();
         $this->levelModel = new Level();
         $this->englishClassModel = new EnglishClass();
+        $this->userModel = new User(); // Inicializar el modelo User
     }
 
     // Método para obtener todos los alumnos
@@ -164,8 +167,7 @@ class StudentController
 
         if (isset($data[StudentEntity::ID_ENGLISH_CLASS]) && $data[StudentEntity::ID_ENGLISH_CLASS] !== null) {
             if (!$this->englishClassModel->getById($data[StudentEntity::ID_ENGLISH_CLASS])) {
-                http_response_code(404);
-                echo json_encode(["status" => "error", "message" => "El ID de clase de inglés (id_english_class) no existe."]);
+                $this->sendError(404, "El ID de clase de inglés (id_english_class) no existe.");
                 return;
             }
         }
@@ -315,15 +317,22 @@ class StudentController
     }
 
     // Helper for error response
-    private static function sendError($code, $message, $exception = null)
-    {
-        http_response_code($code);
-        $response = ["error" => $message];
+    private function sendError($code, $message, $exception = null)
+{
+    http_response_code($code);
+    $response = ["status" => "failure", "message" => "Operación fallida"]; 
 
-        if (getenv('APP_ENV') === 'development' && $exception) {
-            $response["details"] = $exception->getMessage();
-        }
-
-        echo json_encode($response);
+    // En desarrollo, mantenemos los detalles del error
+    if (getenv('APP_ENV') === 'development' && $exception) {
+        $response["details"] = $exception->getMessage();
+        $response["debug_message"] = $message; // Mantenemos el mensaje descriptivo para debug
+    } else {
+        // En producción, solo devolvemos el estado de fallo si el código de error es 4xx (como 400, 404, 409)
+        if ($code >= 400 && $code < 500) {
+                 $response["message"] = $message;
+            }
     }
+
+    echo json_encode($response);
+}
 }
