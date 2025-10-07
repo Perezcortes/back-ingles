@@ -83,7 +83,7 @@ class Student
         // Consulta base
         $query = "SELECT * FROM " . $this->table_name . 
             " WHERE " . StudentEntity::EMAIL . " = :email " .
-            " AND " . StudentEntity::DELETED_AT . " IS NULL " . // Aseguramos que traiga un estudiante activo.
+            " AND " . StudentEntity::DELETED_AT . " IS NULL " . // Aseguramos que retorne un estudiante activo.
             " LIMIT 1";
 
         // Si prepare() falla (ej. error de sintaxis) lanza PDOException

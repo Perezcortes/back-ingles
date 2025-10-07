@@ -6,7 +6,6 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../entities/User.php';
 
 use App\Entities\User as UserEntity;
-use PDO;
 
 class User
 {
@@ -15,8 +14,7 @@ class User
 
     public function __construct()
     {
-        //$database = new Database(); Esto evita el error de intentar acceder a un constructor privado
-        $this->conn = Database::getConnection(); //Cambie el constructor para que use el método estático directamente.
+        $this->conn = Database::getConnection();
     }
 
     public function getAll()
@@ -35,14 +33,31 @@ class User
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-    
-    // Método actualizado para el login de usuarios
+
+    /**
+     * Método para encontrar un user activo por su dirección de email.
+     * @param string $email El correo electrónico del user a buscar.
+     * @return array|false Devuelve el array de user o false si no se encuentra.
+     * @throws \PDOException Si ocurre un error durante la ejecución de la consulta SQL.
+     */
     public function findUserByEmail($email)
     {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE " . UserEntity::EMAIL . " = :email LIMIT 1";
+        // Consulta base
+        $query = "SELECT * FROM " . $this->table_name .
+            " WHERE " . UserEntity::EMAIL . " = :email " .
+            " AND " . UserEntity::DELETED_AT . " IS NULL " . // Aseguramos que retorne un estudiante activo.
+            " LIMIT 1";
+            
+        // Si prepare() falla (ej. error de sintaxis) lanza PDOException
         $stmt = $this->conn->prepare($query);
+
+        // Vinculación de Parámetros: Enlaza los datos de entrada a los marcadores de posición.
         $stmt->bindParam(":email", $email);
+
+        // Si execute() falla (ej. conexión perdida), lanza PDOException
         $stmt->execute();
+
+        // Devuelve el array de user o 'false' si no se encuentra
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
@@ -51,9 +66,9 @@ class User
         $columns = implode(', ', array_keys($data));
         $placeholders = ":" . implode(', :', array_keys($data));
         $query = "INSERT INTO " . $this->table_name . " ({$columns}) VALUES ({$placeholders})";
-        
+
         $stmt = $this->conn->prepare($query);
-        
+
         foreach ($data as $key => &$value) {
             $stmt->bindParam(":" . $key, $value);
         }
@@ -68,11 +83,11 @@ class User
         foreach ($data as $key => $value) {
             $setClauses[] = "{$key} = :{$key}";
         }
-        
+
         $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $setClauses) . " WHERE " . UserEntity::ID . " = :id";
-        
+
         $stmt = $this->conn->prepare($query);
-        
+
         foreach ($data as $key => &$value) {
             $stmt->bindParam(":" . $key, $value);
         }
@@ -88,17 +103,19 @@ class User
         $stmt->bindParam(":id", $id);
         return $stmt->execute();
     }
-    
+
     // Método para eliminar de forma permanente
-    public function deletePermanent($id) {
+    public function deletePermanent($id)
+    {
         $query = "DELETE FROM " . $this->table_name . " WHERE " . UserEntity::ID . " = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         return $stmt->execute();
     }
-    
+
     // Método para restaurar un usuario (soft delete)
-    public function restore($id) {
+    public function restore($id)
+    {
         $query = "UPDATE " . $this->table_name . " SET " . UserEntity::DELETED_AT . " = NULL WHERE " . UserEntity::ID . " = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);

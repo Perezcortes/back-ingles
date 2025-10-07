@@ -20,16 +20,16 @@ class StudentLoginController
 
     public function __construct()
     {
-        $this->responseHandler = new ResponseHandler();
         $this->studentModel = new Student();
         $this->sessionStudentModel = new SessionStudent();
+        $this->responseHandler = new ResponseHandler();
     }
 
     public function login($data)
     {
         // Validación inicial de campos obligatorios
         if (!isset($data[StudentEntity::EMAIL]) || !isset($data[StudentEntity::PASSWORD])) {
-            $this->responseHandler->sendFailure(400, "Los campos 'email' y 'password' son obligatorios");
+            $this->responseHandler->sendFailure("Los campos 'email' y 'password' son obligatorios", 400);
             return;
         }
 
@@ -38,7 +38,7 @@ class StudentLoginController
 
         // Validación del formato del email (seguridad básica)
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $this->responseHandler->sendFailure(400, "Formato de campo 'email' inválido.");
+            $this->responseHandler->sendFailure("Formato de campo 'email' inválido.", 400);
             return;
         }
 
@@ -48,13 +48,13 @@ class StudentLoginController
 
             //Si el student es false
             if (!$student) {
-                $this->responseHandler->sendFailure(401,"Credenciales inválidas.");
+                $this->responseHandler->sendFailure("Credenciales inválidas.", 401);
                 return;
             }
 
             //Si las contraseñas no coinciden
             if ($password !== $student[StudentEntity::PASSWORD]) {
-                $this->responseHandler->sendFailure(401, "Credenciales inválidas.");
+                $this->responseHandler->sendFailure( "Credenciales inválidas.", 401);
                 return;
             }
             

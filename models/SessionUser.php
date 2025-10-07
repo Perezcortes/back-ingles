@@ -6,42 +6,62 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../entities/SessionUser.php';
 
 use App\Entities\SessionUser as SessionUserEntity;
-use PDO;
-use PDOException;
 
 class SessionUser
 {
     private $conn;
-    private $table_name;
+    private $table_name = 'sesion_user';
 
     public function __construct()
     {
-        //$database = new Database(); Esto evita el error de intentar acceder a un constructor privado
-        $this->conn = Database::getConnection(); //Cambie el constructor para que use el método estático directamente.
-        $this->table_name = "sesion_user";
+        $this->conn = Database::getConnection();
     }
 
     /**
-     * Crea un nuevo registro de sesión de usuario en la base de datos.
-     *
-     * @param array $data Los datos para crear la sesión (debe contener 'ip' e 'id_user').
+     * Crea un registro de sesión de auditoría en la base de datos.
+     * @param array $data Contiene los valores para la inserción: [SessionUserEntity::IP, SessionUserEntity::ID_USER]
      * @return bool Retorna true si la inserción fue exitosa.
-     * @throws PDOException Si la inserción falla.
+     * @throws PDOException Si ocurre un error de base de datos durante la preparación o ejecución de la consulta.
      */
     public function createSession($data)
     {
-        try {
-            $query = "INSERT INTO " . $this->table_name . " (" . SessionUserEntity::IP . ", " . SessionUserEntity::ID_USER . ") VALUES (:ip, :id_user)";
-            $stmt = $this->conn->prepare($query);
+        // Consulta Base: Usa marcadores de posición.
+        $query = "INSERT INTO " . $this->table_name . " (" . SessionUserEntity::IP . ", " . SessionUserEntity::ID_USER . ") VALUES (:ip, :id_user)";
 
-            $stmt->bindParam(':ip', $data[SessionUserEntity::IP]);
-            $stmt->bindParam(':id_user', $data[SessionUserEntity::ID_USER], PDO::PARAM_INT);
+        // Si prepare() falla se lanza PDOException
+        $stmt = $this->conn->prepare($query);
 
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            // Manejo de errores más específico
-            error_log("Error al crear sesión: " . $e->getMessage());
-            return false;
-        }
+        // Vinculación de Parámetros: Enlaza los datos de entrada a los marcadores de posición.
+        $stmt->bindParam(':ip', $data[SessionUserEntity::IP]);
+        $stmt->bindParam(':id_user', $data[SessionUserEntity::ID_USER], PDO::PARAM_INT);
+
+        // Si execute() falla se lanza PDOException
+        return $stmt->execute();
+    }
+
+
+    /**
+     * Marca la sesión como terminada (Soft Delete) en el registro de auditoría.
+     * Se llama al cerrar la sesión (Logout).
+     * @param int $id_user El ID del usuario cuya sesión debe ser marcada como finalizada.
+     * @return bool Devuelve true si la actualización de la fila fue exitosa.
+     * @throws PDOException Si ocurre un error de base de datos durante la preparación o ejecución de la consulta.
+     */
+    public function deleteSession($id_user)
+    {
+        // Consulta Base: Usa marcadores de posición.
+        $query = "UPDATE " . $this->table_name .
+            " SET " . SessionUserEntity::DELETED_AT . " = NOW() " .
+            " WHERE " . SessionUserEntity::ID_USER . " = :id_user " .
+            " AND " . SessionUserEntity::DELETED_AT . " IS NULL "; // Solo finaliza las sesiones activas
+
+        // Si prepare() falla se lanza PDOException
+        $stmt = $this->conn->prepare($query);
+
+        // Vinculación de Parámetros: Enlaza los datos de entrada a los marcadores de posición.
+        $stmt->bindParam(':id_user', $id_user, PDO::PARAM_INT);
+
+        // Si execute() falla se lanza PDOException
+        return $stmt->execute();
     }
 }
