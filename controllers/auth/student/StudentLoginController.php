@@ -1,100 +1,98 @@
 <?php
+
+// controllers/auth/student/StudentLoginController.php
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/models/Student.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/SessionStudent.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/responses/ResponseHandler.php'; 
+
+require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/Student.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/SessionStudent.php';
+
+use App\Entities\Student as StudentEntity;
+use App\Entities\SessionStudent as SessionStudentEntity;
+use Exception;
 
 class StudentLoginController
 {
-    public static function login($data)
+    private $studentModel;
+    private $sessionStudentModel;
+    private $responseHandler; 
+
+    public function __construct()
     {
-
-        // Validación básica
-        if (empty($data['email']) || empty($data['password'])) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Los campos 'email' y 'password' son obligatorios."
-            ]);
-            return;
-        }
-
-        // Validar formato del correo
-        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Campo 'email' inválido."
-            ]);
-            return;
-        }
-
-        // Buscar estudiante por email
-        $studentModel = new Student();
-        $student = $studentModel->obtenerPorEmail($data['email']);
-
-        if (!$student) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Credenciales inválidas."
-            ]);
-            return;
-        }
-
-        // Verificar contraseña en texto plano
-        if ($data['password'] !== $student['password']) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Credenciales inválidas."
-            ]);
-            return;
-        }
-
-        // Configurar duración de la sesión a 3 horas (el parametro es en segundos) 1 minuto = 60 segundos. 
-        ini_set('session.gc_maxlifetime', 10800);
-        session_set_cookie_params(10800);
-        session_start();
-
-        // Guardar datos de sesión
-        $_SESSION['student_id'] = $student['id'];
-        $_SESSION['full_name'] = $student['full_name'];
-        $_SESSION['login_time'] = time(); // Hora de inicio
-
-        echo json_encode([
-            "status" => "success",
-            "message" => "Login exitoso.",
-            "student" => [
-                "id" => $student['id'],
-                "name" => $_SESSION['full_name'],
-                "email" => $student['email'],
-                "matricula" => $student["matricula"],
-            ]
-        ]);
+        $this->studentModel = new Student();
+        $this->sessionStudentModel = new SessionStudent();
+        $this->responseHandler = new ResponseHandler(); 
     }
 
-    public static function logout()
+    public function login($data)
     {
-        // Si no hay sesion ni cookie.
-        if (session_status() === PHP_SESSION_NONE && isset($_COOKIE[session_name()])) {
+        if (!isset($data[StudentEntity::EMAIL]) || !isset($data[StudentEntity::PASSWORD])) {
+            $this->responseHandler->sendFailure("Los campos 'email' y 'password' son obligatorios", 400);
+            return;
+        }
+
+        $email = $data[StudentEntity::EMAIL];
+        $password = $data[StudentEntity::PASSWORD];
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->responseHandler->sendFailure("Formato de email inválido.", 400);
+            return;
+        }
+
+        try {
+            $student = $this->studentModel->findStudentByEmail($email);
+
+            if (!$student) {
+                $this->responseHandler->sendFailure("Credenciales inválidas.", 401);
+                return;
+            }
+
+            if ($password !== $student[StudentEntity::PASSWORD]) {
+                $this->responseHandler->sendFailure("Credenciales inválidas.", 401);
+                return;
+            }
+
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            session_regenerate_id(true);
+            $_SESSION['student_id'] = $student[StudentEntity::ID];
+            ini_set('session.gc_maxlifetime', 10800);
+            session_set_cookie_params(10800);
+
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown IP';
+            $this->sessionStudentModel->createSession([
+                SessionStudentEntity::IP => $ip,
+                SessionStudentEntity::ID_STUDENT => $student[StudentEntity::ID]
+            ]);
+
+            // Elimina la contraseña de la respuesta
+            unset($student[StudentEntity::PASSWORD]);
+
+            $this->responseHandler->sendSuccess(
+                ["student" => $student],
+                "Login exitoso"
+            );
+        } catch (Exception $e) {
+            $this->responseHandler->sendFailure("Error al procesar el login.", 500, $e);
+        }
+    }
+    
+    public function logout()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            // Elimina variables de sesión
+        if (isset($_SESSION['student_id'])) {
             session_unset();
-
-            // Destruye la sesión en el servidor
             session_destroy();
-
-            // Borra la cookie de sesión en el navegador
-            if (isset($_COOKIE['PHPSESSID'])) {
-                setcookie('PHPSESSID', '', time() - 3600, '/');
-            }
-
-            echo json_encode([
-                "status" => "success",
-                "message" => "Logout exitoso."
-            ]);
+            setcookie(session_name(), '', time() - 3600, '/');
+            $this->responseHandler->sendSuccess(null, "Logout exitoso.");
         } else {
-            echo json_encode([
-                "status" => "success",
-                "message" => "Ya estabas deslogueado o no tenías una sesión activa."]);
+            $this->responseHandler->sendSuccess(null, "No tenías una sesión activa.");
         }
     }
-
 }

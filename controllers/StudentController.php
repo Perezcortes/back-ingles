@@ -1,214 +1,230 @@
 <?php
-require_once __DIR__ . '/../models/Student.php';
+// controllers/StudentController.php
 
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/Student.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/Major.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/Level.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/EnglishClass.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/User.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/responses/ResponseHandler.php'; // manejador de respuestas
 
-class StudentController 
+require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/Student.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/Major.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/Level.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/EnglishClass.php';
+
+use App\Entities\Student as StudentEntity;
+use App\Entities\EnglishClass as EnglishClassEntity;
+use Exception;
+
+class StudentController
 {
-    // Get all students
-    public static function getAll()
+    private $studentModel;
+    private $majorModel;
+    private $levelModel;
+    private $englishClassModel;
+    private $userModel;
+    private $responseHandler; // Propiedad para el manejador de respuestas
+
+    public function __construct()
+    {
+        $this->studentModel = new Student();
+        $this->majorModel = new Major();
+        $this->levelModel = new Level();
+        $this->englishClassModel = new EnglishClass();
+        $this->userModel = new User();
+        $this->responseHandler = new ResponseHandler(); // Instanciado
+    }
+
+    public function getAll()
     {
         try {
-            $studentModel = new Student();
-            $students = $studentModel->obtenerTodos();
-
-            http_response_code(200);
-            echo json_encode($students);
+            $students = $this->studentModel->getAll();
+            $this->responseHandler->sendSuccess(["students" => $students], "Alumnos encontrados exitosamente");
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener los registros de la tabla.", $e);
+            $this->responseHandler->sendFailure("Error al obtener los registros.", 500, $e);
         }
     }
 
-    // Get student by ID
-    public static function getStudentById($id)
-    {
+    public function getStudentById($id) {
         if (!is_numeric($id)) {
-            return self::sendError(400, "El id debe ser numérico.");
+            $this->responseHandler->sendFailure("El ID debe ser numérico.", 400);
+            return;
         }
-
         try {
-            $studentModel = new Student();
-            $student = $studentModel->obtenerPorId($id);
-
+            $student = $this->studentModel->getById($id);
             if ($student) {
-                http_response_code(200);
-                echo json_encode($student);
+                unset($student['password']);
+                $this->responseHandler->sendSuccess(["student" => $student], "Alumno encontrado exitosamente");
             } else {
-                self::sendError(404, "Student no encontrado");
+                $this->responseHandler->sendFailure("Alumno no encontrado", 404);
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener el registro student", $e);
+            $this->responseHandler->sendFailure("Error al obtener el registro del alumno.", 500, $e);
         }
     }
 
-    public static function getStudentByEmail($email)
-    {
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return self::sendError(400, "El correo electrónico no es válido.");
+    public function getStudentByEmail($data) {
+        if (!isset($data[StudentEntity::EMAIL]) || !filter_var($data[StudentEntity::EMAIL], FILTER_VALIDATE_EMAIL)) {
+            $this->responseHandler->sendFailure("El correo electrónico no es válido.", 400);
+            return;
         }
-
+        $email = $data[StudentEntity::EMAIL];
         try {
-            $studentModel = new Student();
-            $student = $studentModel->obtenerPorEmail($email);
-
+            $student = $this->studentModel->findStudentByEmail($email);
             if ($student) {
-                http_response_code(200);
-                echo json_encode($student);
+                unset($student['password']);
+                $this->responseHandler->sendSuccess(["student" => $student], "Alumno encontrado exitosamente");
             } else {
-                self::sendError(404, "Student no encontrado");
+                $this->responseHandler->sendFailure("Alumno no encontrado", 404);
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener el registro student", $e);
+            $this->responseHandler->sendFailure("Error al obtener el registro del alumno.", 500, $e);
         }
     }
 
-    public static function getStudentByMatricula($matricula)
-    {
+    public function getStudentByMatricula($data) {
+        if (!isset($data[StudentEntity::MATRICULA]) || empty($data[StudentEntity::MATRICULA])) {
+            $this->responseHandler->sendFailure("El campo 'matricula' es obligatorio.", 400);
+            return;
+        }
+        $matricula = $data[StudentEntity::MATRICULA];
         try {
-            $studentModel = new Student();
-            $student = $studentModel->obtenerPorMatricula($matricula);
-
+            $student = $this->studentModel->findStudentByMatricula($matricula);
             if ($student) {
-                http_response_code(200);
-                echo json_encode($student);
+                unset($student['password']);
+                $this->responseHandler->sendSuccess(["student" => $student], "Alumno encontrado exitosamente");
             } else {
-                self::sendError(404, "Student no encontrado");
+                $this->responseHandler->sendFailure("Alumno no encontrado", 404);
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener el registro student", $e);
+            $this->responseHandler->sendFailure("Error al obtener el registro del alumno.", 500, $e);
         }
     }
 
-    public static function create($data)
+    public function create($data)
     {
-        $requiredVars = [
-            'id_major',
-            'id_group_english',
-            'matricula',
-            'first_names',
-            'last_name',
-            'email',
-            'password'
-        ];
-
+        $requiredVars = [StudentEntity::FULL_NAME, StudentEntity::ID_MAJOR, StudentEntity::ID_LEVEL, StudentEntity::MATRICULA, StudentEntity::EMAIL, StudentEntity::PASSWORD];
         foreach ($requiredVars as $var) {
             if (!isset($data[$var]) || trim($data[$var]) === '') {
-                http_response_code(400);
-                echo json_encode(["error" => "El campo '$var' es obligatorio."]);
+                $this->responseHandler->sendFailure("Falta el campo obligatorio: '{$var}'.", 400);
                 return;
             }
         }
 
-        // Validar que id_major e id_class_group_english sean numéricos
-        if (!is_numeric($data['id_major']) || !is_numeric($data['id_group_english'])) {
-            http_response_code(400);
-            echo json_encode(["error" => "Los campos 'id_major' y 'id_group_english' deben ser numéricos."]);
+        if (!$this->majorModel->getById($data[StudentEntity::ID_MAJOR])) {
+            $this->responseHandler->sendFailure("El id_major no existe.", 404);
             return;
         }
 
-        // Validar formato del correo
-        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            http_response_code(400);
-            echo json_encode(["error" => "El correo electrónico no es válido."]);
+        if (!$this->levelModel->getById($data[StudentEntity::ID_LEVEL])) {
+            $this->responseHandler->sendFailure("El id_level no existe.", 404);
             return;
         }
 
+        if (isset($data[StudentEntity::ID_ENGLISH_CLASS]) && $data[StudentEntity::ID_ENGLISH_CLASS] !== null) {
+            if (!$this->englishClassModel->getById($data[StudentEntity::ID_ENGLISH_CLASS])) {
+                $this->responseHandler->sendFailure("El ID de clase de inglés (id_english_class) no existe.", 404);
+                return;
+            }
+        }
+
+        if ($this->studentModel->findStudentByEmail($data[StudentEntity::EMAIL])) {
+            $this->responseHandler->sendFailure("El email ya está en uso.", 409);
+            return;
+        }
+        if ($this->studentModel->findStudentByMatricula($data[StudentEntity::MATRICULA])) {
+            $this->responseHandler->sendFailure("La matrícula ya está en uso.", 409);
+            return;
+        }
+
+        $studentData = [
+            StudentEntity::FULL_NAME => $data[StudentEntity::FULL_NAME],
+            StudentEntity::ID_MAJOR => $data[StudentEntity::ID_MAJOR],
+            StudentEntity::ID_LEVEL => $data[StudentEntity::ID_LEVEL],
+            StudentEntity::MAJOR_GROUP => $data[StudentEntity::MAJOR_GROUP] ?? null,
+            StudentEntity::ID_ENGLISH_CLASS => $data[StudentEntity::ID_ENGLISH_CLASS] ?? null,
+            StudentEntity::MATRICULA => $data[StudentEntity::MATRICULA],
+            StudentEntity::PERIOD => $data[StudentEntity::PERIOD] ?? null,
+            StudentEntity::EMAIL => $data[StudentEntity::EMAIL],
+            StudentEntity::PASSWORD => $data[StudentEntity::PASSWORD]
+        ];
         try {
-            $studentModel = new Student();
-            $creado = $studentModel->crear($data);
-    
-            if ($creado) {
-                http_response_code(201);
-                echo json_encode([
-                    "message" => "Student creado exitosamente.",
-                    "student" => $data
-                ]);
+            $createdId = $this->studentModel->create($studentData);
+            if ($createdId) {
+                $newStudent = $this->studentModel->getById($createdId);
+                unset($newStudent[StudentEntity::PASSWORD]);
+                $this->responseHandler->sendSuccess(["student" => $newStudent], "Alumno creado exitosamente", 201);
             } else {
-                self::sendError(500, "Error al crear el student.");
+                $this->responseHandler->sendFailure("Error al crear el estudiante.", 500);
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al crear el student.", $e);
+            $this->responseHandler->sendFailure("Error al crear el estudiante.", 500, $e);
         }
     }
 
-
-    public static function update($id, $data)
-    {
+    public function update($id, $data) {
         if (!is_numeric($id)) {
-            return self::sendError(400, "El id debe ser numérico.");
+            $this->responseHandler->sendFailure("El ID debe ser numérico.", 400);
+            return;
         }
-    
         if (empty($data)) {
-            return self::sendError(400, "Se requiere al menos un campo para actualizar el estudiante.");
+            $this->responseHandler->sendFailure("Se requiere al menos un campo para actualizar.", 400);
+            return;
         }
-    
         try {
-            $studentModel = new Student();
-            $studentExistente = $studentModel->obtenerPorId($id);
-    
-            if (!$studentExistente) {
-                return self::sendError(404, "No se encontró el student con id: $id");
+            $existingStudent = $this->studentModel->getById($id);
+            if (!$existingStudent) {
+                $this->responseHandler->sendFailure("Alumno no encontrado.", 404);
+                return;
             }
-    
-            $actualizado = $studentModel->actualizarPorId($id, $data);
-    
-            if ($actualizado) {
-                $studentActualizado = $studentModel->obtenerPorId($id);
-    
-                http_response_code(200);
-                echo json_encode([
-                    "message" => "Estudiante actualizado exitosamente",
-                    "student" => $studentActualizado
-                ]);
+            $updated = $this->studentModel->updateById($id, $data);
+            if ($updated) {
+                $updatedStudent = $this->studentModel->getById($id);
+                unset($updatedStudent['password']);
+                $this->responseHandler->sendSuccess(["student" => $updatedStudent], "Alumno actualizado exitosamente");
             } else {
-                self::sendError(500, "Error interno al intentar actualizar el student.");
+                $this->responseHandler->sendFailure("Error al actualizar el alumno.", 500);
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al actualizar el student", $e);
+            $this->responseHandler->sendFailure("Error al actualizar el alumno.", 500, $e);
         }
     }
 
-    public static function deleteOne($id)
-    {
-        if (!is_numeric($id)) {
-            return self::sendError(400, "El id debe ser numérico.");
+    public function deleteOne($data) {
+        if (!isset($data['id']) || !is_numeric($data['id'])) {
+            $this->responseHandler->sendFailure("Se requiere un ID numérico para eliminar el alumno.", 400);
+            return;
         }
-
+        $id = $data['id'];
         try {
-            $studentModel = new Student();
-
-            // 1. Obtener el registro antes de eliminar
-            $student = $studentModel->obtenerPorId($id);
-            if (!$student) {
-                return self::sendError(404, "No se encontró el nivel con id: $id");
+            $existingStudent = $this->studentModel->getById($id);
+            if (!$existingStudent) {
+                $this->responseHandler->sendFailure("Alumno no encontrado o ya eliminado.", 404);
+                return;
             }
-
-            // 2. Eliminarlo
-            $eliminado = $studentModel->eliminarPorId($id);
-
-            if ($eliminado) {
-                http_response_code(200);
-                echo json_encode([
-                    "message" => "Student eliminado exitosamente.",
-                    "student" => $student
-                ]);
+            $deleted = $this->studentModel->deleteById($id);
+            if ($deleted) {
+                $this->responseHandler->sendSuccess(["student" => $existingStudent], "Alumno eliminado exitosamente");
             } else {
-                self::sendError(500, "Error interno al intentar eliminar el Student.");
+                $this->responseHandler->sendFailure("Error al eliminar el alumno.", 500);
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al eliminar el Student.", $e);
+            $this->responseHandler->sendFailure("Error al eliminar el alumno.", 500, $e);
         }
     }
 
-    // Helper for error response
-    private static function sendError($code, $message, $exception = null)
+    public function deleteAll()
     {
-        http_response_code($code);
-        $response = ["error" => $message];
-
-        if (getenv('APP_ENV') === 'development' && $exception) {
-            $response["details"] = $exception->getMessage();
+        try {
+            $deleted = $this->studentModel->deleteAll();
+            if ($deleted) {
+                $this->responseHandler->sendSuccess(null, "Alumnos eliminados exitosamente");
+            } else {
+                $this->responseHandler->sendFailure("Error al eliminar todos los alumnos.", 500);
+            }
+        } catch (Exception $e) {
+            $this->responseHandler->sendFailure("Error al eliminar todos los alumnos.", 500, $e);
         }
-
-        echo json_encode($response);
     }
 }

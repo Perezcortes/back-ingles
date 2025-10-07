@@ -1,22 +1,29 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../entities/Level.php'; // Incluir la entidad
+
+use App\Entities\Level as LevelEntity; 
+use PDO;
 
 class Level {
-    private $conexion;
+    private $conn;
+    private $table_name = "level";
 
     public function __construct() {
-        $this->conexion = Database::getConnection();
+        $this->conn = Database::getConnection();
     }
 
     public function obtenerTodos() {
-        $consulta = $this->conexion->query("SELECT * FROM level ORDER BY id ASC");
+        $consulta = $this->conn->query("SELECT * FROM level ORDER BY id ASC");
         return $consulta->fetchAll();
     }
 
-    public function obtenerPorId($id) {
-        $consulta = $this->conexion->prepare("SELECT * FROM level WHERE id = ?");
-        $consulta->execute([$id]);
-        return $consulta->fetch();
+    public function getById($id) {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE " . LevelEntity::ID . " = :id AND " . LevelEntity::DELETED_AT . " IS NULL LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function crear($datos) {
@@ -25,7 +32,7 @@ class Level {
         $valores = array_values($datos);
     
         $sql = "INSERT INTO level (" . implode(',', $campos) . ") VALUES (" . implode(',', $placeholders) . ")";
-        $consulta = $this->conexion->prepare($sql);
+        $consulta = $this->conn->prepare($sql);
         return $consulta->execute($valores);
     }
 
@@ -41,13 +48,13 @@ class Level {
         $valores[] = $id; // El ID va al final para el WHERE
     
         $sql = "UPDATE level SET " . implode(", ", $campos) . " WHERE id = ?";
-        $consulta = $this->conexion->prepare($sql);
+        $consulta = $this->conn->prepare($sql);
         return $consulta->execute($valores);
     }
     
 
     public function eliminarPorId($id) {
-        $consulta = $this->conexion->prepare("DELETE FROM level WHERE id = ?");
+        $consulta = $this->conn->prepare("DELETE FROM level WHERE id = ?");
         return $consulta->execute([$id]);
     }
 }

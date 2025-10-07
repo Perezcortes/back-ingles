@@ -1,68 +1,115 @@
 <?php
+// models/Student.php
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../entities/Student.php';
 
+use App\Entities\Student as StudentEntity;
+use PDO;
 
-class Student{
+class Student
+{
+    private $conn;
+    private $table_name = "student";
 
-    private $conexion;
-
-    public function __construct() {
-        $this->conexion = Database::getConnection();
+    public function __construct()
+    {
+        $this->conn = Database::getConnection();
     }
-
-    public function obtenerTodos() {
-        $consulta = $this->conexion->query("SELECT * FROM student ORDER BY id ASC");
-        return $consulta->fetchAll();
-    }
-
-    public function obtenerPorId($id) {
-        $consulta = $this->conexion->prepare("SELECT * FROM student WHERE id = ?");
-        $consulta->execute([$id]);
-        return $consulta->fetch();
-    }
-
-    public function obtenerPorEmail($email) {
-        $consulta = $this->conexion->prepare("SELECT * FROM student WHERE email = ?");
-        $consulta->execute([$email]);
-        return $consulta->fetch();
-    }
-
-    public function obtenerPorMatricula($matricula) {
-        $consulta = $this->conexion->prepare("SELECT * FROM student WHERE matricula = ?");
-        $consulta->execute([$matricula]);
-        return $consulta->fetch();
-    }
-
-
-    public function crear($datos) {
-        $campos = array_keys($datos);
-        $placeholders = array_fill(0, count($datos), '?');
-        $valores = array_values($datos);
     
-        $sql = "INSERT INTO student (" . implode(',', $campos) . ") VALUES (" . implode(',', $placeholders) . ")";
-        $consulta = $this->conexion->prepare($sql);
-        return $consulta->execute($valores);
-    }
-
-    public function actualizarPorId($id, $datos) {
-        $campos = [];
-        $valores = [];
-    
-        foreach ($datos as $campo => $valor) {
-            $campos[] = "$campo = ?";
-            $valores[] = $valor;
+    // Método para crear un nuevo estudiante
+    public function create($data)
+    {
+        $columns = implode(', ', array_keys($data));
+        $placeholders = ":" . implode(', :', array_keys($data));
+        $query = "INSERT INTO " . $this->table_name . " ({$columns}) VALUES ({$placeholders})";
+        
+        $stmt = $this->conn->prepare($query);
+        
+        foreach ($data as $key => &$value) {
+            $stmt->bindParam(":" . $key, $value);
         }
-    
-        $valores[] = $id; // El ID va al final para el WHERE
-    
-        $sql = "UPDATE student SET " . implode(", ", $campos) . " WHERE id = ?";
-        $consulta = $this->conexion->prepare($sql);
-        return $consulta->execute($valores);
+
+        if ($stmt->execute()) {
+            return $this->conn->lastInsertId();
+        }
+        
+        return false;
     }
 
-    public function eliminarPorId($id) {
-        $consulta = $this->conexion->prepare("DELETE FROM student WHERE id = ?");
-        return $consulta->execute([$id]);
+    // Método para actualizar un estudiante por ID
+    public function updateById($id, $data) {
+        $setClauses = [];
+        foreach ($data as $key => $value) {
+            $setClauses[] = "{$key} = :{$key}";
+        }
+        $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $setClauses) . " WHERE id = :id";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        
+        foreach ($data as $key => &$value) {
+            $stmt->bindParam(":" . $key, $value);
+        }
+
+        return $stmt->execute();
     }
+
+    public function getAll()
+    {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE deleted_at IS NULL ORDER BY id ASC"; // Asegurarse de no incluir registros eliminados
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    // Método para encontrar un estudiante por su ID
+    public function getById($id) // <-- Nombre del método corregido
+    {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE " . StudentEntity::ID . " = :id LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Método para encontrar un estudiante por su email
+    public function findStudentByEmail($email)
+    {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE " . StudentEntity::EMAIL . " = :email LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    // Método para encontrar un estudiante por su matrícula
+    public function findStudentByMatricula($matricula)
+    {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE " . StudentEntity::MATRICULA . " = :matricula LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':matricula', $matricula);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Método para realizar un borrado lógico (soft delete)
+    public function deleteById($id) {
+        $query = "UPDATE " . $this->table_name . " SET deleted_at = NOW() WHERE id = :id";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        
+        return $stmt->execute();
+    }
+
+    // Método para realizar un borrado lógico masivo (soft delete)
+    public function deleteAll()
+    {
+        $query = "UPDATE " . $this->table_name . " SET deleted_at = NOW() WHERE deleted_at IS NULL";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute();
+    }
+
+    // Aquí irían el resto de los métodos (getAll, update, delete, etc.)
 }

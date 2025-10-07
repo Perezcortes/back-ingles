@@ -1,97 +1,97 @@
 <?php
+
+// controllers/auth/user/UserLoginController.php
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/models/User.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/models/SessionUser.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/responses/ResponseHandler.php'; 
+
+require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/User.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/SessionUser.php';
+
+use App\Entities\User as UserEntity;
+use App\Entities\SessionUser as SessionUserEntity;
+use Exception;
 
 class UserLoginController
 {
-    public static function login($data)
+    private $userModel;
+    private $sessionUserModel;
+    private $responseHandler;
+
+    public function __construct()
     {
-
-        // Validación básica
-        if (empty($data['email']) || empty($data['password'])) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Los campos 'email' y 'password' son obligatorios."]);
-            return;
-        }
-
-        // Validar formato del correo
-        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Campo 'email' inválido."]);
-            return;
-        }
-
-        // Buscar user por email
-        $userModel = new User();
-        $user = $userModel->obtenerPorEmail($data['email']);
-
-        if (!$user) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Credenciales inválidas."]);
-            return;
-        }
-
-        // Verificar contraseña en texto plano
-        if ($data['password'] !== $user['password']) {
-            echo json_encode([
-                "status" => "failure",
-                "message" => "Credenciales inválidas."]);
-            return;
-        }
-
-        // Configurar duración de la sesión a 8 horas (el parametro es en segundos) 1 minuto = 60 segundos
-        ini_set('session.gc_maxlifetime', 28800);
-        session_set_cookie_params(28800);
-        session_start();
-
-        // Guardar datos de sesión
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['full_name'] = $user['full_name'];
-        $_SESSION['login_time'] = time(); // Hora de inicio
-
-        echo json_encode([
-            "status" => "success",
-            "message" => "Login exitoso.",
-            "user" => [
-                "id" => $user['id'],
-                "name" => $_SESSION['full_name'],
-                "email" => $user['email'],
-                "is_administrator" => $user['is_administrator'],
-                "is_level_coordinator" => $user['is_level_coordinator'],
-                "is_professor" => $user['is_professor']
-            ]
-        ]);
+        $this->userModel = new User();
+        $this->sessionUserModel = new SessionUser();
+        $this->responseHandler = new ResponseHandler(); 
     }
 
-    public static function logout()
+    public function login()
     {
-        // Si no hay sesion ni cookie.
-        if (session_status() === PHP_SESSION_NONE && isset($_COOKIE[session_name()])) {
-            session_start();
+        $data = json_decode(file_get_contents("php://input"), true);
+        
+        if (!isset($data[UserEntity::EMAIL]) || !isset($data[UserEntity::PASSWORD])) {
+            $this->responseHandler->sendFailure("Los campos 'email' y 'password' son obligatorios", 400);
+            return;
         }
 
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            // Elimina variables de sesión
-            session_unset();
+        $email = $data[UserEntity::EMAIL];
+        $password = $data[UserEntity::PASSWORD];
 
-            // Destruye la sesión en el servidor
-            session_destroy();
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->responseHandler->sendFailure("Formato de correo inválido", 400);
+            return;
+        }
 
-            // Borra la cookie de sesión en el navegador
-            if (isset($_COOKIE['PHPSESSID'])) {
-                setcookie('PHPSESSID', '', time() - 3600, '/');
+        try {
+            $user = $this->userModel->findUserByEmail($email);
+
+            if (!$user) {
+                $this->responseHandler->sendFailure("Credenciales inválidas", 401);
+                return;
             }
 
-            echo json_encode([
-                "status" => "success",
-                "message" => "Logout exitoso."]);
-        } else {
-            echo json_encode([
-                "status" => "success",
-                "message" => "Ya estabas deslogueado o no tenías una sesión activa."]);
+            if ($password !== $user[UserEntity::PASSWORD]) {
+                $this->responseHandler->sendFailure("Credenciales inválidas", 401);
+                return;
+            }
+
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            session_regenerate_id(true);
+            $_SESSION['user_id'] = $user[UserEntity::ID];
+            
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown IP';
+            $this->sessionUserModel->createSession([
+                'ip' => $ip,
+                'id_user' => $user[UserEntity::ID]
+            ]);
+
+            unset($user[UserEntity::PASSWORD]);
+
+            $this->responseHandler->sendSuccess(
+                ["user" => $user],
+                "Login exitoso"
+            );
+        } catch (Exception $e) {
+            $this->responseHandler->sendFailure("Error al procesar el login.", 500, $e);
         }
     }
 
+    public function logout()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        if (isset($_SESSION['user_id'])) {
+            session_unset();
+            session_destroy();
+            setcookie(session_name(), '', time() - 3600, '/');
+            $this->responseHandler->sendSuccess(null, "Logout exitoso.");
+        } else {
+            $this->responseHandler->sendSuccess(null, "No tenías una sesión activa.");
+        }
+    }
 }
