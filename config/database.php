@@ -47,13 +47,13 @@ class Database {
     }
 
     private function handleError($message) {
-        $env = getenv('APP_ENV') ?: 'development';
 
-        if ($env === 'development') {
-            die(json_encode(['error' => $message]));
-        } else {
-            http_response_code(500);
-            die(json_encode(['error' => 'Error interno del servidor']));
-        }
+        http_response_code(500);
+        $response = [
+            "status" => "failure",
+            "message" => $message,
+            "error" => "Conexión en la base de datos no establecida."
+        ];
+        die(json_encode($response));
     }
 }

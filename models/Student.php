@@ -5,7 +5,6 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../entities/Student.php';
 
 use App\Entities\Student as StudentEntity;
-use PDO;
 
 class Student
 {
@@ -73,13 +72,30 @@ class Student
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // Método para encontrar un estudiante por su email
+    /**
+     * Método para encontrar un estudiante activo por su dirección de email.
+     * @param string $email El correo electrónico del estudiante a buscar.
+     * @return array|false Devuelve el array de estudiante o false si no se encuentra.
+     * @throws \PDOException Si ocurre un error durante la ejecución de la consulta SQL.
+     */
     public function findStudentByEmail($email)
     {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE " . StudentEntity::EMAIL . " = :email LIMIT 1";
+        // Consulta base
+        $query = "SELECT * FROM " . $this->table_name . 
+            " WHERE " . StudentEntity::EMAIL . " = :email " .
+            " AND " . StudentEntity::DELETED_AT . " IS NULL " . // Aseguramos que traiga un estudiante activo.
+            " LIMIT 1";
+
+        // Si prepare() falla (ej. error de sintaxis) lanza PDOException
         $stmt = $this->conn->prepare($query);
+
+        // Vinculación de Parámetros: Enlaza los datos de entrada a los marcadores de posición.
         $stmt->bindParam(':email', $email);
+
+        // Si execute() falla (ej. conexión perdida), lanza PDOException
         $stmt->execute();
+
+        // Devuelve el array de estudiante o 'false' si no se encuentra
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
     

@@ -3,14 +3,17 @@
 
 require_once __DIR__ . '/../models/Log.php';
 
-class ResponseHandler {
+class ResponseHandler
+{
     private $logModel;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->logModel = new Log();
     }
 
-    public function sendSuccess($data, $message = "Operación exitosa", $code = 200) {
+    public function sendSuccess($data, $message = "Operación exitosa", $code = 200)
+    {
         http_response_code($code);
         $response = [
             "status" => "success",
@@ -21,8 +24,9 @@ class ResponseHandler {
         }
         echo json_encode($response);
     }
-    
-    public function sendFailure($message, $code, Exception $exception = null) {
+
+    public function sendFailure($message, $code, Exception $exception = null)
+    {
         http_response_code($code);
         $response = [
             "status" => "failure",
@@ -30,8 +34,18 @@ class ResponseHandler {
         ];
 
         if ($exception) {
+
             $logMessage = (string) $exception;
-            $this->logModel->createLog($logMessage);
+
+            try {
+                //Registramos nuestros Logs personalizados en la DB
+                $this->logModel->createLog($logMessage);
+
+            } catch (\PDOException $logEx) {
+                error_log("Fallo al escribir en la tabla de logs: " . $logEx->getMessage());
+            } catch (\Exception $logEx) {
+                error_log("Fallo al escribir en la tabla de logs: " . $logEx->getMessage());
+            }
         }
 
         echo json_encode($response);
