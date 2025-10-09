@@ -13,8 +13,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/Level.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/entities/EnglishClass.php';
 
 use App\Entities\Student as StudentEntity;
-use App\Entities\EnglishClass as EnglishClassEntity;
-use Exception;
 
 class StudentController
 {
