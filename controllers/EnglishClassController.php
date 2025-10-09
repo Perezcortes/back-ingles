@@ -2,9 +2,9 @@
 // controllers/EnglishClassController.php
 
 require_once __DIR__ . '/../models/EnglishClass.php';
-require_once __DIR__ . '/../models/User.php'; // Requerimos el modelo User para la validación
-require_once __DIR__ . '/../models/Level.php'; // Requerimos el modelo Level para la validación
-require_once __DIR__ . '/../responses/ResponseHandler.php'; // <-- Nueva dependencia
+require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/Level.php';
+require_once __DIR__ . '/../responses/ResponseHandler.php';
 require_once __DIR__ . '/../entities/EnglishClass.php';
 require_once __DIR__ . '/../entities/User.php';
 require_once __DIR__ . '/../entities/Level.php';
@@ -28,227 +28,259 @@ class EnglishClassController
         $this->levelModel = new Level();
         $this->responseHandler = new ResponseHandler();
     }
-    
-    // Obtener todos los grupos de inglés (método de instancia)
+
+    /**
+     * Obtiene todas las clases de inglés.
+     * @return void
+     */
     public function getAll()
     {
         try {
-            $groups = $this->englishClassModel->getAll();
-            $this->responseHandler->sendSuccess(["groups" => $groups], "Clases de inglés encontradas exitosamente.");
+            $classes = $this->englishClassModel->getAll();
+            $this->responseHandler->sendSuccess(["classes" => $classes], "Clases de inglés obtenidas exitosamente.");
         } catch (Exception $e) {
-            $this->responseHandler->sendFailure("Error al obtener los registros de la tabla.", 500, $e);
+            $this->responseHandler->sendFailure("Error al obtener las clases de inglés.", 500, $e);
         }
     }
 
-    // Obtener un grupo de inglés por ID (método de instancia)
+    /**
+     * Obtiene una clase de inglés por su ID.
+     * @param int $id El ID de la clase.
+     * @return void
+     */
     public function getOne($id)
     {
         if (!is_numeric($id)) {
-            $this->responseHandler->sendFailure("El id debe ser numérico.", 400);
+            $this->responseHandler->sendFailure("El ID debe ser numérico.", 400);
             return;
         }
 
         try {
-            $group = $this->englishClassModel->getById($id);
+            $class = $this->englishClassModel->getById($id);
 
-            if ($group) {
-                $this->responseHandler->sendSuccess(["class" => $group], "Clase de inglés encontrada exitosamente.");
-            } else {
-                $this->responseHandler->sendFailure("Clase de inglés no encontrada", 404);
+            if (!$class) {
+                $this->responseHandler->sendFailure("Clase de inglés no encontrada.", 404);
+                return;
             }
+            
+            $this->responseHandler->sendSuccess(["class" => $class], "Clase de inglés encontrada exitosamente.");
         } catch (Exception $e) {
-            $this->responseHandler->sendFailure("Error al obtener el registro del grupo", 500, $e);
+            $this->responseHandler->sendFailure("Error al obtener la clase de inglés.", 500, $e);
         }
     }
 
-    // Obtener grupos de inglés por profesor (método de instancia)
+    /**
+     * Obtiene las clases de inglés por el ID del profesor.
+     * @param int $id_professor El ID del profesor.
+     * @return void
+     */
     public function getByProfessor($id_professor)
     {
         if (!is_numeric($id_professor)) {
-            $this->responseHandler->sendFailure("El id_professor debe ser numérico.", 400);
+            $this->responseHandler->sendFailure("El ID del profesor debe ser numérico.", 400);
             return;
         }
 
         try {
-            $groups = $this->englishClassModel->getByProfessorId($id_professor);
-            $this->responseHandler->sendSuccess(["groups" => $groups], "Clases encontradas por profesor exitosamente.");
+            $classes = $this->englishClassModel->getByProfessorId($id_professor);
+            $this->responseHandler->sendSuccess(["classes" => $classes], "Clases encontradas por profesor exitosamente.");
         } catch (Exception $e) {
-            $this->responseHandler->sendFailure("Error al obtener los grupos por profesor", 500, $e);
+            $this->responseHandler->sendFailure("Error al obtener las clases por profesor.", 500, $e);
         }
     }
 
-    // Obtener grupos de inglés por nivel (método de instancia)
+    /**
+     * Obtiene las clases de inglés por el ID del nivel.
+     * @param int $id_level El ID del nivel.
+     * @return void
+     */
     public function getByLevel($id_level)
     {
         if (!is_numeric($id_level)) {
-            $this->responseHandler->sendFailure("El id_level debe ser numérico.", 400);
+            $this->responseHandler->sendFailure("El ID del nivel debe ser numérico.", 400);
             return;
         }
 
         try {
-            $groups = $this->englishClassModel->getByLevelId($id_level);
-            $this->responseHandler->sendSuccess(["groups" => $groups], "Clases encontradas por nivel exitosamente.");
+            $classes = $this->englishClassModel->getByLevelId($id_level);
+            $this->responseHandler->sendSuccess(["classes" => $classes], "Clases encontradas por nivel exitosamente.");
         } catch (Exception $e) {
-            $this->responseHandler->sendFailure("Error al obtener los grupos por nivel", 500, $e);
+            $this->responseHandler->sendFailure("Error al obtener las clases por nivel.", 500, $e);
         }
     }
 
-    // Crear un nuevo grupo de inglés (método de instancia)
+    /**
+     * Crea una nueva clase de inglés.
+     * @param array $data Los datos de la nueva clase.
+     * @return void
+     */
     public function create($data)
     {
-        $requiredVars = [
+        $requiredFields = [
             EnglishClassEntity::NAME_GROUP,
             EnglishClassEntity::ID_PROFESSOR,
             EnglishClassEntity::ID_LEVEL
         ];
 
-        foreach ($requiredVars as $var) {
-            if (!isset($data[$var]) || trim($data[$var]) === '') {
-                $this->responseHandler->sendFailure("El campo '{$var}' es obligatorio", 400);
+        foreach ($requiredFields as $field) {
+            if (empty($data[$field])) {
+                $this->responseHandler->sendFailure("El campo '{$field}' es obligatorio.", 400);
                 return;
             }
         }
-        
-        // Asumiendo que los modelos 'User' y 'Level' existen y tienen el método getById()
-        // Validación de existencia de IDs relacionados
-        if (!$this->userModel->getById($data[EnglishClassEntity::ID_PROFESSOR])) {
-            $this->responseHandler->sendFailure("El profesor con id: {$data[EnglishClassEntity::ID_PROFESSOR]} no existe.", 404);
-            return;
-        }
 
-        if (!$this->levelModel->getById($data[EnglishClassEntity::ID_LEVEL])) {
-            $this->responseHandler->sendFailure("El nivel con id: {$data[EnglishClassEntity::ID_LEVEL]} no existe.", 404);
-            return;
-        }
-        
         try {
-            $created = $this->englishClassModel->create($data);
-
-            if ($created) {
-                // Obtenemos el ID del registro creado
-                $newClassId = $this->englishClassModel->lastInsertId(); // Asegúrate de tener este método en tu modelo
-                $newClass = $this->englishClassModel->getById($newClassId);
-                
-                $this->responseHandler->sendSuccess(["class" => $newClass], "Clase de inglés creada exitosamente.", 201);
-            } else {
-                $this->responseHandler->sendFailure("Error al crear la clase.", 500);
+            // Validación de existencia de IDs relacionados
+            if (!$this->userModel->getById($data[EnglishClassEntity::ID_PROFESSOR])) {
+                $this->responseHandler->sendFailure("El profesor con ID: {$data[EnglishClassEntity::ID_PROFESSOR]} no existe.", 404);
+                return;
             }
+
+            if (!$this->levelModel->getById($data[EnglishClassEntity::ID_LEVEL])) {
+                $this->responseHandler->sendFailure("El nivel con ID: {$data[EnglishClassEntity::ID_LEVEL]} no existe.", 404);
+                return;
+            }
+
+            $newClassId = $this->englishClassModel->create($data);
+
+            if (!$newClassId) {
+                $this->responseHandler->sendFailure("Error al crear la clase. No se pudo obtener el ID de inserción.", 500);
+                return;
+            }
+
+            $newClass = $this->englishClassModel->getById($newClassId);
+            $this->responseHandler->sendSuccess(["class" => $newClass], "Clase de inglés creada exitosamente.", 201);
         } catch (Exception $e) {
             $this->responseHandler->sendFailure("Error al crear la clase.", 500, $e);
         }
     }
 
-    // Actualizar un grupo de inglés (método de instancia)
+    /**
+     * Actualiza una clase de inglés por su ID.
+     * @param int $id El ID de la clase a actualizar.
+     * @param array $data Los datos para la actualización.
+     * @return void
+     */
     public function update($id, $data)
     {
         if (!is_numeric($id)) {
-            $this->responseHandler->sendFailure("El id debe ser numérico.", 400);
+            $this->responseHandler->sendFailure("El ID debe ser numérico.", 400);
             return;
         }
 
         if (empty($data)) {
-            $this->responseHandler->sendFailure("Se requiere al menos un campo para actualizar la clase.", 400);
+            $this->responseHandler->sendFailure("Se requiere al menos un campo para actualizar.", 400);
             return;
         }
 
         try {
-            $groupExistente = $this->englishClassModel->getById($id);
-
-            if (!$groupExistente) {
-                $this->responseHandler->sendFailure("No se encontró la clase con id: $id", 404);
+            $existingClass = $this->englishClassModel->getById($id);
+            if (!$existingClass) {
+                $this->responseHandler->sendFailure("Clase de inglés no encontrada.", 404);
                 return;
             }
 
             $updated = $this->englishClassModel->updateById($id, $data);
-
-            if ($updated) {
-                $updatedGroup = $this->englishClassModel->getById($id);
-
-                $this->responseHandler->sendSuccess(["class" => $updatedGroup], "Clase de inglés actualizada exitosamente.");
-            } else {
-                $this->responseHandler->sendFailure("Error interno al intentar actualizar la clase.", 500);
+            if (!$updated) {
+                $this->responseHandler->sendFailure("Error al actualizar la clase.", 500);
+                return;
             }
+
+            $updatedClass = $this->englishClassModel->getById($id);
+            $this->responseHandler->sendSuccess(["class" => $updatedClass], "Clase de inglés actualizada exitosamente.");
         } catch (Exception $e) {
-            $this->responseHandler->sendFailure("Error al actualizar la clase", 500, $e);
+            $this->responseHandler->sendFailure("Error al actualizar la clase.", 500, $e);
         }
     }
 
-    // Eliminar un grupo de inglés (Soft Delete) (método de instancia)
+    /**
+     * Elimina una clase de inglés de forma lógica (soft-delete) por su ID.
+     * @param int $id El ID de la clase a eliminar.
+     * @return void
+     */
     public function deleteOne($id)
     {
         if (!is_numeric($id)) {
-            $this->responseHandler->sendFailure("El id debe ser numérico.", 400);
+            $this->responseHandler->sendFailure("El ID debe ser numérico.", 400);
             return;
         }
 
         try {
-            $group = $this->englishClassModel->getById($id);
-            if (!$group) {
-                $this->responseHandler->sendFailure("No se encontró la clase con id: $id", 404);
+            $existingClass = $this->englishClassModel->getById($id);
+            if (!$existingClass) {
+                $this->responseHandler->sendFailure("Clase de inglés no encontrada.", 404);
                 return;
             }
 
             $deleted = $this->englishClassModel->deleteById($id);
-
-            if ($deleted) {
-                $this->responseHandler->sendSuccess(["class" => $group], "Clase de inglés eliminada exitosamente.");
-            } else {
-                $this->responseHandler->sendFailure("Error interno al intentar eliminar la clase.", 500);
+            if (!$deleted) {
+                $this->responseHandler->sendFailure("Error al eliminar la clase.", 500);
+                return;
             }
+
+            $this->responseHandler->sendSuccess(["class" => $existingClass], "Clase de inglés eliminada exitosamente (soft-delete).");
         } catch (Exception $e) {
             $this->responseHandler->sendFailure("Error al eliminar la clase.", 500, $e);
         }
     }
 
-    // Restaurar un grupo de inglés (desmarcar como eliminado) (método de instancia)
+    /**
+     * Restaura una clase de inglés (deshace el soft-delete) por su ID.
+     * @param int $id El ID de la clase a restaurar.
+     * @return void
+     */
     public function restore($id)
     {
         if (!is_numeric($id)) {
-            $this->responseHandler->sendFailure("El id debe ser numérico.", 400);
+            $this->responseHandler->sendFailure("El ID debe ser numérico.", 400);
             return;
         }
 
         try {
-            $group = $this->englishClassModel->getById($id);
-            if (!$group) {
-                $this->responseHandler->sendFailure("No se encontró la clase con id: $id", 404);
+            $existingClass = $this->englishClassModel->getById($id);
+            if (!$existingClass) {
+                $this->responseHandler->sendFailure("Clase de inglés no encontrada.", 404);
                 return;
             }
 
             $restored = $this->englishClassModel->restoreById($id);
-
-            if ($restored) {
-                $this->responseHandler->sendSuccess(["class" => $group], "Clase de inglés restaurada exitosamente.");
-            } else {
-                $this->responseHandler->sendFailure("Error interno al intentar restaurar la clase.", 500);
+            if (!$restored) {
+                $this->responseHandler->sendFailure("Error al restaurar la clase.", 500);
+                return;
             }
+
+            $this->responseHandler->sendSuccess(["class" => $existingClass], "Clase de inglés restaurada exitosamente.");
         } catch (Exception $e) {
             $this->responseHandler->sendFailure("Error al restaurar la clase.", 500, $e);
         }
     }
 
-    // Eliminar un grupo de inglés permanentemente (hard delete) (método de instancia)
+    /**
+     * Elimina una clase de inglés permanentemente (hard-delete) por su ID.
+     * @param int $id El ID de la clase a eliminar permanentemente.
+     * @return void
+     */
     public function deletePermanent($id)
     {
         if (!is_numeric($id)) {
-            $this->responseHandler->sendFailure("El id debe ser numérico.", 400);
+            $this->responseHandler->sendFailure("El ID debe ser numérico.", 400);
             return;
         }
 
         try {
-            $group = $this->englishClassModel->getById($id);
-            if (!$group) {
-                $this->responseHandler->sendFailure("No se encontró la clase con id: $id", 404);
+            $existingClass = $this->englishClassModel->getById($id);
+            if (!$existingClass) {
+                $this->responseHandler->sendFailure("Clase de inglés no encontrada.", 404);
                 return;
             }
 
             $deletedPermanent = $this->englishClassModel->deletePermanentById($id);
-
-            if ($deletedPermanent) {
-                $this->responseHandler->sendSuccess(["class" => $group], "Clase de inglés eliminada permanentemente.");
-            } else {
-                $this->responseHandler->sendFailure("Error interno al intentar eliminar permanentemente la clase.", 500);
+            if (!$deletedPermanent) {
+                $this->responseHandler->sendFailure("Error al eliminar la clase permanentemente.", 500);
+                return;
             }
+
+            $this->responseHandler->sendSuccess(["class" => $existingClass], "Clase de inglés eliminada permanentemente.");
         } catch (Exception $e) {
             $this->responseHandler->sendFailure("Error al eliminar permanentemente la clase.", 500, $e);
         }
