@@ -18,6 +18,7 @@ class SessionValidator
         // Verificamos si el valor 'user_id' o el valor 'student_id' están en la sesión
         if (isset($_SESSION['user_id']) || isset($_SESSION['student_id'])) {
             // Si al menos una de las claves existe, la sesión es válida
+            return true;
         }
 
         // Retorna falso porque ninguna de las claves ('user_id' o 'student_id') está presente

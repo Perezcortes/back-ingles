@@ -13,11 +13,11 @@ require_once 'controllers/EnglishClassController.php'; // Renombrado a EnglishCl
 
 
 
-//Login/Logout para Alumnos (validado)
+//Login/Logout para Alumnos
 Route::post('/api/v1/student/login', [StudentLoginController::class, 'login']);
 Route::post('/api/v1/student/logout', [StudentLoginController::class, 'logout'], [SessionValidator::class, 'hasActiveSession']); // Middleware para validar sesión de alumno
 
-//Login/Logout para Profesores/Jefe de nivel/Administrador (validado)
+//Login/Logout para Profesores/Jefe de nivel/Administrador
 Route::post('/api/v1/user/login', [UserLoginController::class, 'login']);
 Route::post('/api/v1/user/logout', [UserLoginController::class, 'logout'], [SessionValidator::class, 'hasActiveSession']);
 
@@ -29,11 +29,11 @@ Route::get('/api/v1/level/getAll', [LevelController::class, 'getAll'],);
 Route::put('/api/v1/level/update/{id}', [LevelController::class, 'update'],);
 Route::delete('/api/v1/level/deleteOne/{id}', [LevelController::class, 'deleteOne'],);
 
-// Rutas para student con parámetros dinámicos (validado)
+// Rutas para student con parámetros dinámicos
 Route::post('/api/v1/student/create', [StudentController::class, 'create'],[SessionValidator::class, 'hasActiveSession']);
-Route::get('/api/v1/student/getOne/Id/{id}', [StudentController::class, 'getStudentById'], [SessionValidator::class, 'hasActiveSession']);
-Route::post('/api/v1/student/getOne/email', [StudentController::class, 'getStudentByEmail'], [SessionValidator::class, 'hasActiveSession']);
-Route::post('/api/v1/student/getOne/matricula', [StudentController::class, 'getStudentByMatricula'], [SessionValidator::class, 'hasActiveSession']);
+Route::get('/api/v1/student/getOne/Id/{id}', [StudentController::class, 'getOne'], [SessionValidator::class, 'hasActiveSession']);
+Route::post('/api/v1/student/getOne/email', [StudentController::class, 'getByEmail'], [SessionValidator::class, 'hasActiveSession']);
+Route::post('/api/v1/student/getOne/matricula', [StudentController::class, 'getByMatricula'], [SessionValidator::class, 'hasActiveSession']);
 Route::get('/api/v1/student/getAll', [StudentController::class, 'getAll'], [SessionValidator::class, 'hasActiveSession']);
 Route::put('/api/v1/student/update/{id}', [StudentController::class, 'update'], [SessionValidator::class, 'hasActiveSession']);
 Route::post('/api/v1/student/deleteOne', [StudentController::class, 'deleteOne'], [SessionValidator::class, 'hasActiveSession']);
