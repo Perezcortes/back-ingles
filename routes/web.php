@@ -13,11 +13,11 @@ require_once 'controllers/EnglishClassController.php'; // Renombrado a EnglishCl
 
 
 
-//Login/Logout para Alumnos
+//Login/Logout para Alumnos (validado)
 Route::post('/api/v1/student/login', [StudentLoginController::class, 'login']);
 Route::post('/api/v1/student/logout', [StudentLoginController::class, 'logout'], [SessionValidator::class, 'checkStudent']); // Middleware para validar sesión de alumno
 
-//Login/Logout para Profesores/Jefe de nivel/Administrador
+//Login/Logout para Profesores/Jefe de nivel/Administrador (validado)
 Route::post('/api/v1/user/login', [UserLoginController::class, 'login']);
 Route::post('/api/v1/user/logout', [UserLoginController::class, 'logout'], [SessionValidator::class, 'checkUser']);
 
@@ -29,7 +29,7 @@ Route::get('/api/v1/level/getAll', [LevelController::class, 'getAll'],);
 Route::put('/api/v1/level/update/{id}', [LevelController::class, 'update'],);
 Route::delete('/api/v1/level/deleteOne/{id}', [LevelController::class, 'deleteOne'],);
 
-// Rutas para student con parámetros dinámicos 
+// Rutas para student con parámetros dinámicos (validado)
 Route::post('/api/v1/student/create', [StudentController::class, 'create'],);
 Route::get('/api/v1/student/getOne/Id/{id}', [StudentController::class, 'getStudentById'], [SessionValidator::class, 'checkUser']);
 Route::post('/api/v1/student/getOne/email', [StudentController::class, 'getStudentByEmail'], [SessionValidator::class, 'checkUser']);

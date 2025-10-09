@@ -167,11 +167,6 @@ class StudentController
                 return;
             }
 
-            if (!empty($data[StudentEntity::ID_ENGLISH_CLASS]) && !$this->englishClassModel->getById($data[StudentEntity::ID_ENGLISH_CLASS])) {
-                $this->responseHandler->sendFailure("La clase de inglés no existe.", 404);
-                return;
-            }
-
             // Validación de unicidad
             if ($this->studentModel->findStudentByEmail($data[StudentEntity::EMAIL])) {
                 $this->responseHandler->sendFailure("El correo electrónico ya está en uso.", 409);
