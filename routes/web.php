@@ -14,12 +14,12 @@ require_once 'controllers/EnglishClassController.php'; // Renombrado a EnglishCl
 
 
 //Login/Logout para Alumnos
-Route::post('/api/v1/student/login', [StudentLoginController::class, 'login']);
-Route::post('/api/v1/student/logout', [StudentLoginController::class, 'logout'], [SessionValidator::class, 'hasActiveSession']); // Middleware para validar sesión de alumno
+Route::post('/api/v1/student/login', [StudentLoginController::class, 'login']);//validado
+Route::post('/api/v1/student/logout', [StudentLoginController::class, 'logout'], [SessionValidator::class, 'hasActiveSession']); // Middleware para validar sesión de alumno (validado)
 
 //Login/Logout para Profesores/Jefe de nivel/Administrador
-Route::post('/api/v1/user/login', [UserLoginController::class, 'login']);
-Route::post('/api/v1/user/logout', [UserLoginController::class, 'logout'], [SessionValidator::class, 'hasActiveSession']);
+Route::post('/api/v1/user/login', [UserLoginController::class, 'login']); //validado
+Route::post('/api/v1/user/logout', [UserLoginController::class, 'logout'], [SessionValidator::class, 'hasActiveSession']); //validado
 
 
 // Rutas para Level con parámetros dinámicos 
@@ -30,14 +30,14 @@ Route::put('/api/v1/level/update/{id}', [LevelController::class, 'update'],);
 Route::delete('/api/v1/level/deleteOne/{id}', [LevelController::class, 'deleteOne'],);
 
 // Rutas para student con parámetros dinámicos
-Route::post('/api/v1/student/create', [StudentController::class, 'create'],[SessionValidator::class, 'hasActiveSession']);
-Route::get('/api/v1/student/getOne/{id}', [StudentController::class, 'getOne'], [SessionValidator::class, 'hasActiveSession']);
-Route::post('/api/v1/student/getOne/email', [StudentController::class, 'getByEmail'], [SessionValidator::class, 'hasActiveSession']);
-Route::post('/api/v1/student/getOne/matricula', [StudentController::class, 'getByMatricula'], [SessionValidator::class, 'hasActiveSession']);
-Route::get('/api/v1/student/getAll', [StudentController::class, 'getAll'], [SessionValidator::class, 'hasActiveSession']);
-Route::put('/api/v1/student/update/{id}', [StudentController::class, 'update'], [SessionValidator::class, 'hasActiveSession']);
-Route::delete('/api/v1/student/deleteOne/{id}', [StudentController::class, 'deleteOne'], [SessionValidator::class, 'hasActiveSession']);
-Route::delete('/api/v1/student/deleteAll', [StudentController::class, 'deleteAll'], [SessionValidator::class, 'hasActiveSession']); // Nueva ruta para eliminar todos los estudiantes
+Route::post('/api/v1/student/create', [StudentController::class, 'create'],[SessionValidator::class, 'hasActiveSession']);//validado
+Route::get('/api/v1/student/getOne/{id}', [StudentController::class, 'getOne'], [SessionValidator::class, 'hasActiveSession']);//validado
+Route::post('/api/v1/student/getOne/email', [StudentController::class, 'getByEmail'], [SessionValidator::class, 'hasActiveSession']);//validado
+Route::post('/api/v1/student/getOne/matricula', [StudentController::class, 'getByMatricula'], [SessionValidator::class, 'hasActiveSession']);//validado
+Route::get('/api/v1/student/getAll', [StudentController::class, 'getAll'], [SessionValidator::class, 'hasActiveSession']);//validado
+Route::put('/api/v1/student/update/{id}', [StudentController::class, 'update'], [SessionValidator::class, 'hasActiveSession']); //validado
+Route::delete('/api/v1/student/deleteOne/{id}', [StudentController::class, 'deleteOne'], [SessionValidator::class, 'hasActiveSession']); //validado
+Route::delete('/api/v1/student/deleteAll', [StudentController::class, 'deleteAll'], [SessionValidator::class, 'hasActiveSession']); // validado
 
 // Rutas para user con parámetros dinámicos 
 Route::post('/api/v1/user/create', [UserController::class, 'create'],);
