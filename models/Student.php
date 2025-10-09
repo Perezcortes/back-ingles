@@ -50,8 +50,6 @@ class Student
     public function updateById($id, $data)
     {
         $setClauses = [];
-        // Se añade la marca de tiempo de actualización
-        $data[StudentEntity::UPDATED_AT] = date('Y-m-d H:i:s'); 
         
         foreach ($data as $key => $value) {
             $setClauses[] = "{$key} = :{$key}";
