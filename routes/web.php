@@ -31,6 +31,7 @@ Route::delete('/api/v1/level/deleteOne/{id}', [LevelController::class, 'deleteOn
 
 // Rutas para student con parámetros dinámicos
 Route::post('/api/v1/student/create', [StudentController::class, 'create'],[SessionValidator::class, 'hasActiveSession']);//validado
+Route::post('/api/v1/student/create/many', [StudentController::class, 'createMany'], [SessionValidator::class, 'hasActiveSession']); // <-- NUEVA RUTA para creación masiva
 Route::get('/api/v1/student/getOne/{id}', [StudentController::class, 'getOne'], [SessionValidator::class, 'hasActiveSession']);//validado
 Route::post('/api/v1/student/getOne/email', [StudentController::class, 'getByEmail'], [SessionValidator::class, 'hasActiveSession']);//validado
 Route::post('/api/v1/student/getOne/matricula', [StudentController::class, 'getByMatricula'], [SessionValidator::class, 'hasActiveSession']);//validado

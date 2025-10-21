@@ -191,6 +191,135 @@ class StudentController
     }
 
     /**
+     * Crea múltiples estudiantes en una única petición, realizando validaciones exhaustivas.
+     * Si alguna validación falla para cualquier registro, detiene el proceso y devuelve
+     * un error detallado.
+     *
+     * @param array $dataArray Un array de arrays con los datos de los estudiantes a crear.
+     * @return void
+     */
+    public function createMany($dataArray)
+    {
+        // 1. Validación inicial del cuerpo de la solicitud
+        if (!is_array($dataArray) || empty($dataArray)) {
+            $this->responseHandler->sendFailure("El cuerpo de la solicitud debe ser un array no vacío de estudiantes.", 400);
+            return;
+        }
+
+        $requiredFields = [
+            StudentEntity::FULL_NAME,
+            StudentEntity::ID_MAJOR,
+            StudentEntity::ID_LEVEL,
+            StudentEntity::MATRICULA,
+            StudentEntity::EMAIL,
+            StudentEntity::PASSWORD
+        ];
+
+        $emailsInBatch = [];
+        $matriculasInBatch = [];
+        $validStudentsData = [];
+        
+        // 2. Validación de todos los registros en el lote 
+        foreach ($dataArray as $index => $data) {
+            $recordNumber = $index + 1; // Para mensajes de error más amigables
+            
+            // 2.1 Validación de campos obligatorios
+            foreach ($requiredFields as $field) {
+                if (empty($data[$field])) {
+                    $this->responseHandler->sendFailure("Registro #{$recordNumber}: El campo '{$field}' es obligatorio.", 400);
+                    return;
+                }
+            }
+            
+            // 2.2 Validación de formato de email
+            if (!filter_var($data[StudentEntity::EMAIL], FILTER_VALIDATE_EMAIL)) {
+                $this->responseHandler->sendFailure("Registro #{$recordNumber}: Formato de correo electrónico inválido.", 400);
+                return;
+            }
+
+            // 2.3 Validación de unicidad dentro del lote
+            if (in_array($data[StudentEntity::EMAIL], $emailsInBatch)) {
+                $this->responseHandler->sendFailure("Registro #{$recordNumber}: El correo electrónico ya está duplicado en este lote.", 409);
+                return;
+            }
+            if (in_array($data[StudentEntity::MATRICULA], $matriculasInBatch)) {
+                $this->responseHandler->sendFailure("Registro #{$recordNumber}: La matrícula ya está duplicada en este lote.", 409);
+                return;
+            }
+
+            // Añadir a las listas de chequeo del lote
+            $emailsInBatch[] = $data[StudentEntity::EMAIL];
+            $matriculasInBatch[] = $data[StudentEntity::MATRICULA];
+            
+            // 2.4 Validación de existencia de IDs relacionados y unicidad en la DB
+            try {
+                if (!$this->majorModel->getById($data[StudentEntity::ID_MAJOR])) {
+                    $this->responseHandler->sendFailure("Registro #{$recordNumber}: La carrera (id_major) no existe.", 404);
+                    return;
+                }
+
+                if (!$this->levelModel->getById($data[StudentEntity::ID_LEVEL])) {
+                    $this->responseHandler->sendFailure("Registro #{$recordNumber}: El nivel (id_level) no existe.", 404);
+                    return;
+                }
+
+                // Validación de clase de inglés opcional
+                if (!empty($data[StudentEntity::ID_ENGLISH_CLASS])) {
+                    if (!$this->englishClassModel->getById($data[StudentEntity::ID_ENGLISH_CLASS])) {
+                        $this->responseHandler->sendFailure("Registro #{$recordNumber}: La clase de inglés (id_english_class) no existe.", 404);
+                        return;
+                    }
+                }
+                
+                // Validación de unicidad contra la DB
+                if ($this->studentModel->findStudentByEmail($data[StudentEntity::EMAIL])) {
+                    $this->responseHandler->sendFailure("Registro #{$recordNumber}: El correo electrónico ya está en uso en el sistema.", 409);
+                    return;
+                }
+                if ($this->studentModel->findStudentByMatricula($data[StudentEntity::MATRICULA])) {
+                    $this->responseHandler->sendFailure("Registro #{$recordNumber}: La matrícula ya está en uso en el sistema.", 409);
+                    return;
+                }
+
+                // Si todas las validaciones pasan, se añade a la lista para inserción
+                $validStudentsData[] = $data;
+                
+            } catch (Exception $e) {
+                // Captura errores de DB durante la validación (ej. falla de conexión)
+                $this->responseHandler->sendFailure("Registro #{$recordNumber}: Error interno de validación. Revisar Logs del Server.", 500, $e);
+                return;
+            }
+        }
+        
+        // 3. Inserción masiva si todas las validaciones pasaron 
+        try {
+            $createdIds = $this->studentModel->createMany($validStudentsData);
+
+            if ($createdIds === false) {
+                // Falla de transacción capturada en el modelo
+                $this->responseHandler->sendFailure("Fallo la creación de estudiantes por un error en la transacción de la base de datos.", 500);
+                return;
+            }
+
+            // Opcional: obtener los registros completos creados para la respuesta (excluyendo password)
+            $createdStudents = [];
+            foreach ($createdIds as $id) {
+                $student = $this->studentModel->getById($id);
+                if ($student) {
+                    unset($student[StudentEntity::PASSWORD]);
+                    $createdStudents[] = $student;
+                }
+            }
+
+            // Respuesta de éxito, código 201 (Created)
+            $this->responseHandler->sendSuccess(["students" => $createdStudents], "Estudiantes creados exitosamente.", 201);
+            
+        } catch (Exception $e) {
+            $this->responseHandler->sendFailure("Error al procesar la creación masiva de estudiantes.", 500, $e);
+        }
+    }
+
+    /**
      * Actualiza los datos de un estudiante por su ID.
      * @param int $id El ID del estudiante a actualizar.
      * @param array $data Los datos para la actualización.
