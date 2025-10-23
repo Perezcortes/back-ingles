@@ -1,13 +1,6 @@
 <?php
 // models/Major.php
 
-/**
- * @package App\Models
- *
- * Modelo para gestionar la tabla `major` (carreras) de la base de datos.
- * Incluye operaciones CRUD con soporte para borrado lógico (soft delete).
- */
-
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../entities/Major.php';
 

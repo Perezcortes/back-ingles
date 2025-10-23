@@ -91,6 +91,56 @@ class Student
     }
 
     /**
+     * Obtiene registros de estudiantes aplicando filtros dinámicos.
+     * * @param array $filters Array asociativo con los posibles filtros ('busqueda', 'nivel_id', 'carrera_id').
+     * @return array Array de estudiantes encontrados.
+     */
+    public function getStudentsByFilters($filters)
+    {
+        // Consulta base, siempre filtrando por registros no eliminados
+        $query = "SELECT * FROM " . $this->table_name . " WHERE " . StudentEntity::DELETED_AT . " IS NULL";
+        $params = [];
+
+        // Filtro por Nivel (nivel_id)
+        if (!empty($filters['nivel_id'])) {
+            $query .= " AND " . StudentEntity::ID_LEVEL . " = :nivel_id";
+            $params['nivel_id'] = $filters['nivel_id'];
+        }
+
+        // Filtro por Carrera (carrera_id)
+        if (!empty($filters['carrera_id'])) {
+            $query .= " AND " . StudentEntity::ID_MAJOR . " = :carrera_id";
+            $params['carrera_id'] = $filters['carrera_id'];
+        }
+
+        // Filtro por Búsqueda unificada (LIKE: full_name, email, matricula)
+        if (!empty($filters['busqueda'])) {
+            $query .= " AND (" . 
+                StudentEntity::FULL_NAME . " LIKE :busqueda_name OR " .
+                StudentEntity::EMAIL . " LIKE :busqueda_email OR " .
+                StudentEntity::MATRICULA . " LIKE :busqueda_matricula" .
+            ")";
+
+            $searchTerm = "%{$filters['busqueda']}%";
+            $params['busqueda_name'] = $searchTerm;
+            $params['busqueda_email'] = $searchTerm;
+            $params['busqueda_matricula'] = $searchTerm;
+        }
+
+        $query .= " ORDER BY " . StudentEntity::ID . " ASC";
+        
+        try {
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        } catch (\PDOException $e) {
+            error_log("Error al obtener estudiantes con filtros: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
      * Actualiza un estudiante por ID.
      * @param int $id El ID del estudiante a actualizar.
      * @param array $data Los datos a actualizar.
