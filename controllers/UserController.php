@@ -83,17 +83,25 @@ class UserController
         }
     }
 
-    // Get all users
-    public static function getAll()
+    /**
+     * Obtiene todos los usuarios activos.
+     * Este es el Servicio 16: Obtener Todos los Usuarios.
+     * @return void
+     */
+    public function getAll()
     {
         try {
-            $userModel = new User();
-            $users = $userModel->obtenerTodos();
+            // Llama al método del modelo que filtra por DELETED_AT IS NULL
+            $users = $this->userModel->getAll();
+            
+            // Eliminar la contraseña de todos los usuarios
+            foreach ($users as &$user) {
+                unset($user[UserEntity::PASSWORD]);
+            }
 
-            http_response_code(200);
-            echo json_encode($users);
+            $this->responseHandler->sendSuccess(["users" => $users], "Usuarios encontrados exitosamente.");
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener los registros de la tabla.", $e);
+            $this->responseHandler->sendFailure("Error al obtener los registros de usuarios.", 500, $e);
         }
     }
 

@@ -20,7 +20,6 @@ Route::post('/api/v1/student/logout', [StudentLoginController::class, 'logout'],
 //Login/Logout para Profesores/Jefe de nivel/Administrador
 Route::post('/api/v1/user/login', [UserLoginController::class, 'login']); //validado
 Route::post('/api/v1/user/logout', [UserLoginController::class, 'logout'], [SessionValidator::class, 'hasActiveSession']); //validado
-Route::post('/api/v1/user/create', [UserController::class, 'create'], [SessionValidator::class, 'hasActiveSession']); // Crear usuario 
 
 // Rutas para Level con parámetros dinámicos 
 Route::post('/api/v1/level/create', [LevelController::class, 'create'],);
@@ -42,8 +41,8 @@ Route::delete('/api/v1/student/deleteOne/{id}', [StudentController::class, 'dele
 Route::delete('/api/v1/student/deleteAll', [StudentController::class, 'deleteAll'], [SessionValidator::class, 'hasActiveSession']); // validado
 
 // Rutas para user con parámetros dinámicos 
-Route::post('/api/v1/user/create', [UserController::class, 'create'],);
-Route::get('/api/v1/user/getAll', [UserController::class, 'getAll'],);
+Route::post('/api/v1/user/create', [UserController::class, 'create'], [SessionValidator::class, 'hasActiveSession']); // Crear usuario 
+Route::get('/api/v1/user/getAll', [UserController::class, 'getAll'], [SessionValidator::class, 'hasActiveSession']); // Obtener todos los usuarios
 Route::get('/api/v1/user/getOne/Id/{id}', [UserController::class, 'getuserById'], );
 Route::get('/api/v1/user/getOne/Email/{id}', [UserController::class, 'getuserByEmail'], );
 Route::put('/api/v1/user/update/{id}', [UserController::class, 'update'],);

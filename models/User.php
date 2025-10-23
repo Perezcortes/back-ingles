@@ -17,9 +17,13 @@ class User
         $this->conn = Database::getConnection();
     }
 
+    /**
+     * Obtiene todos los registros de usuarios activos (no eliminados lógicamente).
+     * @return array Un array de objetos o un array vacío.
+     */
     public function getAll()
     {
-        $query = "SELECT * FROM " . $this->table_name . " ORDER BY " . UserEntity::ID . " ASC";
+        $query = "SELECT * FROM " . $this->table_name . " WHERE " . UserEntity::DELETED_AT . " IS NULL ORDER BY " . UserEntity::ID . " ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
