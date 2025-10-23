@@ -45,7 +45,7 @@ Route::post('/api/v1/user/create', [UserController::class, 'create'], [SessionVa
 Route::get('/api/v1/user/getAll', [UserController::class, 'getAll'], [SessionValidator::class, 'hasActiveSession']); // Obtener todos los usuarios
 Route::get('/api/v1/user/getOne/Id/{id}', [UserController::class, 'getuserById'], );
 Route::post('/api/v1/user/getOne/email', [UserController::class, 'getUserByEmail'], [SessionValidator::class, 'hasActiveSession']); // Obtener usuario por email
-Route::put('/api/v1/user/update/{id}', [UserController::class, 'update'],);
+Route::put('/api/v1/user/update/{id}', [UserController::class, 'update'], [SessionValidator::class, 'hasActiveSession']); // Actualizar usuario
 Route::delete('/api/v1/user/deleteOne/{id}', [UserController::class, 'deleteOne'],);
 
 

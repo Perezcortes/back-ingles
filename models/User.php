@@ -82,6 +82,12 @@ class User
         return false;
     }
 
+    /**
+     * Actualiza un registro de usuario por su ID.
+     * @param int $id El ID del usuario a actualizar.
+     * @param array $data Los datos a actualizar.
+     * @return bool True si la actualización fue exitosa, false en caso contrario.
+     */
     public function updateById($id, $data)
     {
         $setClauses = [];
@@ -99,6 +105,34 @@ class User
         }
         $stmt->bindParam(":id", $id);
 
+        return $stmt->execute();
+    }
+
+    /**
+     * Anula el ID de un coordinador de nivel en la tabla 'level' si deja de ser coordinador.
+     * @param int $coordinatorId El ID del coordinador a anular.
+     * @return bool True en éxito, false en fallo.
+     */
+    public function nullifyLevelCoordinator($coordinatorId)
+    {
+        // tabla 'level' y columna 'id_level_coordinator'
+        $query = "UPDATE level SET id_level_coordinator = NULL WHERE id_level_coordinator = :coordinatorId";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':coordinatorId', $coordinatorId, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    /**
+     * Anula el ID de un profesor en la tabla 'english_class' si deja de ser profesor.
+     * @param int $professorId El ID del profesor a anular.
+     * @return bool True en éxito, false en fallo.
+     */
+    public function nullifyEnglishClassProfessor($professorId)
+    {
+        // tabla 'english_class' y columna 'id_professor'
+        $query = "UPDATE english_class SET id_professor = NULL WHERE id_professor = :professorId";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':professorId', $professorId, PDO::PARAM_INT);
         return $stmt->execute();
     }
 

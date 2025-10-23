@@ -158,39 +158,97 @@ class UserController
         }
     }
 
-    public static function update($id, $data)
+    /**
+     * Actualiza los datos de un usuario existente (Servicio 19).
+     * @param int $id ID del usuario a actualizar.
+     * @param array $data Los datos a modificar.
+     * @return void
+     */
+    public function update($id, $data)
     {
+        //Validación de ID numérico
         if (!is_numeric($id)) {
-            return self::sendError(400, "El id debe ser numérico.");
+            $this->responseHandler->sendFailure("El ID debe ser numérico.", 400);
+            return;
         }
-    
-        if (empty($data)) {
-            return self::sendError(400, "Se requiere al menos un campo para actualizar el estudiante.");
+
+        // Campos requeridos en la data de entrada
+        $requiredFields = [
+            UserEntity::EMAIL, 
+            UserEntity::PASSWORD, 
+            UserEntity::IS_PROFESSOR, 
+            UserEntity::IS_LEVEL_COORDINATOR, 
+            UserEntity::IS_ADMINISTRATOR
+        ];
+        
+        foreach ($requiredFields as $field) {
+            if (!isset($data[$field])) {
+                $this->responseHandler->sendFailure("El campo '{$field}' es obligatorio para la actualización.", 400);
+                return;
+            }
         }
-    
+
         try {
-            $userModel = new User();
-            $userExistente = $userModel->obtenerPorId($id);
-    
-            if (!$userExistente) {
-                return self::sendError(404, "No se encontró el user con id: $id");
+            // Verificar si el usuario existe y obtener sus datos actuales
+            $existingUser = $this->userModel->getById($id);
+
+            if (!$existingUser) {
+                $this->responseHandler->sendFailure("Usuario no encontrado.", 404);
+                return;
             }
-    
-            $actualizado = $userModel->actualizarPorId($id, $data);
-    
-            if ($actualizado) {
-                $userActualizado = $userModel->obtenerPorId($id);
-    
-                http_response_code(200);
-                echo json_encode([
-                    "message" => "Estudiante actualizado exitosamente",
-                    "user" => $userActualizado
-                ]);
-            } else {
-                self::sendError(500, "Error interno al intentar actualizar el user.");
+
+            // Validación de unicidad de email (si el email ha cambiado)
+            $newEmail = $data[UserEntity::EMAIL];
+            if ($existingUser[UserEntity::EMAIL] !== $newEmail) {
+                $userWithSameEmail = $this->userModel->findUserByEmail($newEmail);
+                if ($userWithSameEmail && (int)$userWithSameEmail[UserEntity::ID] !== (int)$id) {
+                    $this->responseHandler->sendFailure("El correo electrónico ya está registrado por otro usuario.", 409);
+                    return;
+                }
             }
+            
+            // Preparación de datos para la actualización
+            $updateData = [
+                // Los campos opcionales toman el valor enviado o el valor existente
+                UserEntity::FULL_NAME => $data[UserEntity::FULL_NAME] ?? $existingUser[UserEntity::FULL_NAME],
+                UserEntity::OFFICE => $data[UserEntity::OFFICE] ?? $existingUser[UserEntity::OFFICE],
+                UserEntity::EMAIL => $newEmail,
+                UserEntity::PASSWORD => $data[UserEntity::PASSWORD],
+                // Conversión de booleano a entero (1 o 0)
+                UserEntity::IS_PROFESSOR => $data[UserEntity::IS_PROFESSOR] ? 1 : 0,
+                UserEntity::IS_LEVEL_COORDINATOR => $data[UserEntity::IS_LEVEL_COORDINATOR] ? 1 : 0,
+                UserEntity::IS_ADMINISTRATOR => $data[UserEntity::IS_ADMINISTRATOR] ? 1 : 0,
+            ];
+            
+            // Lógica de negocio (Anulación de FKs si se desactiva un rol)
+            
+            $oldIsCoordinator = (int)$existingUser[UserEntity::IS_LEVEL_COORDINATOR];
+            $newIsCoordinator = $updateData[UserEntity::IS_LEVEL_COORDINATOR];
+
+            $oldIsProfessor = (int)$existingUser[UserEntity::IS_PROFESSOR];
+            $newIsProfessor = $updateData[UserEntity::IS_PROFESSOR];
+
+            // Si antes era coordinador (1) y ahora no (0), se anula el FK en la tabla 'level'
+            if ($oldIsCoordinator === 1 && $newIsCoordinator === 0) {
+                $this->userModel->nullifyLevelCoordinator($id);
+            }
+            
+            // Si antes era profesor (1) y ahora no (0), se anula el FK en la tabla 'english_class'
+            if ($oldIsProfessor === 1 && $newIsProfessor === 0) {
+                $this->userModel->nullifyEnglishClassProfessor($id);
+            }
+
+            // Ejecutar la actualización
+            $this->userModel->updateById($id, $updateData);
+            
+            // Obtener y responder con el usuario actualizado
+            $updatedUser = $this->userModel->getById($id);
+            unset($updatedUser[UserEntity::PASSWORD]); // Quitar contraseña de la respuesta
+
+            $this->responseHandler->sendSuccess(["user" => $updatedUser], "Usuario actualizado exitosamente.");
+
         } catch (Exception $e) {
-            self::sendError(500, "Error al actualizar el user", $e);
+            $this->responseHandler->sendFailure("Error al actualizar el usuario. Revisar logs.", 500, $e);
         }
     }
 
