@@ -61,6 +61,11 @@ class User
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Crea un nuevo registro en la tabla `user`.
+     * @param array $data Los datos a insertar.
+     * @return int|bool El ID del nuevo registro o false si falla.
+     */
     public function create($data)
     {
         $columns = implode(', ', array_keys($data));
@@ -73,7 +78,11 @@ class User
             $stmt->bindParam(":" . $key, $value);
         }
 
-        return $stmt->execute();
+        if ($stmt->execute()) {
+            return $this->conn->lastInsertId(); // Devolvemos el ID
+        }
+
+        return false;
     }
 
     public function updateById($id, $data)

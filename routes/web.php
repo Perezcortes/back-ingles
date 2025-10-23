@@ -20,7 +20,7 @@ Route::post('/api/v1/student/logout', [StudentLoginController::class, 'logout'],
 //Login/Logout para Profesores/Jefe de nivel/Administrador
 Route::post('/api/v1/user/login', [UserLoginController::class, 'login']); //validado
 Route::post('/api/v1/user/logout', [UserLoginController::class, 'logout'], [SessionValidator::class, 'hasActiveSession']); //validado
-
+Route::post('/api/v1/user/create', [UserController::class, 'create'], [SessionValidator::class, 'hasActiveSession']); // Crear usuario 
 
 // Rutas para Level con parámetros dinámicos 
 Route::post('/api/v1/level/create', [LevelController::class, 'create'],);

@@ -1,9 +1,88 @@
 <?php
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../responses/ResponseHandler.php'; 
+require_once __DIR__ . '/../entities/User.php';
 
+use App\Entities\User as UserEntity;
 
 class UserController 
 {
+    private $userModel;
+    private $responseHandler;
+
+    public function __construct()
+    {
+        $this->userModel = new User();
+        $this->responseHandler = new ResponseHandler();
+    }
+
+    /**
+     * Crea un nuevo usuario en el sistema.
+     * @param array $data Los datos del nuevo usuario.
+     * @return void
+     */
+    public function create($data)
+    {
+        // Campos obligatorios
+        $requiredFields = [
+            UserEntity::EMAIL, 
+            UserEntity::PASSWORD, 
+            UserEntity::IS_PROFESSOR, 
+            UserEntity::IS_LEVEL_COORDINATOR, 
+            UserEntity::IS_ADMINISTRATOR
+        ];
+
+        foreach ($requiredFields as $field) {
+            if (!isset($data[$field]) || (is_string($data[$field]) && trim($data[$field]) === '')) {
+                $this->responseHandler->sendFailure("El campo '{$field}' es obligatorio.", 400);
+                return;
+            }
+        }
+
+        // Validación de formato de email
+        $email = $data[UserEntity::EMAIL];
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->responseHandler->sendFailure("El formato del correo electrónico es inválido.", 400);
+            return;
+        }
+
+        try {
+            // Validación de unicidad de email
+            if ($this->userModel->findUserByEmail($email)) {
+                $this->responseHandler->sendFailure("El correo electrónico ya está registrado.", 409);
+                return;
+            }
+
+            // Preparación de datos (usando valores por defecto y opcionales) Usamos el operador ternario para asegurar que los booleanos se conviertan a INT (1 o 0)
+            $userData = [
+                UserEntity::FULL_NAME => $data[UserEntity::FULL_NAME] ?? null,
+                UserEntity::OFFICE => $data[UserEntity::OFFICE] ?? null,
+                UserEntity::EMAIL => $email,
+                UserEntity::PASSWORD => $data[UserEntity::PASSWORD],
+                UserEntity::IS_PROFESSOR => $data[UserEntity::IS_PROFESSOR] ? 1 : 0,
+                UserEntity::IS_LEVEL_COORDINATOR => $data[UserEntity::IS_LEVEL_COORDINATOR] ? 1 : 0,
+                UserEntity::IS_ADMINISTRATOR => $data[UserEntity::IS_ADMINISTRATOR] ? 1 : 0,
+            ];
+
+            // Creación
+            $createdId = $this->userModel->create($userData);
+
+            if (!$createdId) {
+                $this->responseHandler->sendFailure("Error al crear el usuario. No se pudo obtener el ID de inserción.", 500);
+                return;
+            }
+
+            // Obtener y responder
+            $newUser = $this->userModel->getById($createdId);
+            unset($newUser[UserEntity::PASSWORD]); // Eliminar la contraseña de la respuesta
+
+            $this->responseHandler->sendSuccess(["user" => $newUser], "Usuario creado exitosamente.", 201);
+
+        } catch (Exception $e) {
+            $this->responseHandler->sendFailure("Error al crear el usuario. Revisar logs.", 500, $e);
+        }
+    }
+
     // Get all users
     public static function getAll()
     {
@@ -58,60 +137,6 @@ class UserController
             }
         } catch (Exception $e) {
             self::sendError(500, "Error al obtener el registro user", $e);
-        }
-    }
-
-    public static function create($data)
-    {
-        $requiredVars = [
-            'first_names',
-            'office',
-            'last_name',
-            'email',
-            'password',
-            'is_professor',
-            'is_level_coordinator',
-            'is_administrator',
-            'is_active'
-        ];
-
-        foreach ($requiredVars as $var) {
-            if (!isset($data[$var]) || trim($data[$var]) === '') {
-                http_response_code(400);
-                echo json_encode(["error" => "El campo '$var' es obligatorio."]);
-                return;
-            }
-        }
-
-        // Validar que id_major e id_class_group_english sean numéricos
-        if (!is_numeric($data['office'])) {
-            http_response_code(400);
-            echo json_encode(["error" => "Los campos 'id_major' deben ser numéricos."]);
-            return;
-        }
-
-        // Validar formato del correo
-        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            http_response_code(400);
-            echo json_encode(["error" => "El correo electrónico no es válido."]);
-            return;
-        }
-
-        try {
-            $userModel = new User();
-            $creado = $userModel->crear($data);
-    
-            if ($creado) {
-                http_response_code(201);
-                echo json_encode([
-                    "message" => "User creado exitosamente.",
-                    "user" => $data
-                ]);
-            } else {
-                self::sendError(500, "Error al crear el user.");
-            }
-        } catch (Exception $e) {
-            self::sendError(500, "Error al crear el user.", $e);
         }
     }
 
