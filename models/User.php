@@ -136,6 +136,11 @@ class User
         return $stmt->execute();
     }
 
+    /**
+     * Realiza el borrado lógico (soft delete) de un usuario.
+     * @param int $id ID del usuario a eliminar.
+     * @return bool True en éxito, false en fallo.
+     */
     public function deleteById($id)
     {
         $query = "UPDATE " . $this->table_name . " SET " . UserEntity::DELETED_AT . " = NOW() WHERE " . UserEntity::ID . " = :id";

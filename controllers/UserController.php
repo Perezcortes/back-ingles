@@ -252,35 +252,55 @@ class UserController
         }
     }
 
-    public static function deleteOne($id)
+    /**
+     * Realiza el borrado lógico (soft delete) de un usuario (Servicio 20).
+     * @param int $id ID del usuario a eliminar.
+     * @return void
+     */
+    public function deleteOne($id)
     {
+        // Validación de ID numérico
         if (!is_numeric($id)) {
-            return self::sendError(400, "El id debe ser numérico.");
+            $this->responseHandler->sendFailure("El ID debe ser numérico.", 400);
+            return;
         }
 
         try {
-            $userModel = new User();
-
-            // 1. Obtener el registro antes de eliminar
-            $user = $userModel->obtenerPorId($id);
+            // Obtener el registro antes de eliminar 
+            $user = $this->userModel->getById($id);
             if (!$user) {
-                return self::sendError(404, "No se encontró el nivel con id: $id");
+                $this->responseHandler->sendFailure("No se encontró el usuario con id: $id", 404);
+                return;
             }
 
-            // 2. Eliminarlo
-            $eliminado = $userModel->eliminarPorId($id);
+            // Anular FKs en tablas dependientes si el usuario tenía roles
+            $isCoordinator = (int)$user[UserEntity::IS_LEVEL_COORDINATOR];
+            $isProfessor = (int)$user[UserEntity::IS_PROFESSOR];
+            
+            // Si era coordinador, anular la referencia en la tabla 'level'
+            if ($isCoordinator === 1) {
+                $this->userModel->nullifyLevelCoordinator($id);
+            }
+            
+            // Si era profesor, anular la referencia en la tabla 'english_class'
+            if ($isProfessor === 1) {
+                $this->userModel->nullifyEnglishClassProfessor($id);
+            }
+
+            // Ejecutar el borrado lógico (soft delete)
+            $eliminado = $this->userModel->deleteById($id);
 
             if ($eliminado) {
-                http_response_code(200);
-                echo json_encode([
-                    "message" => "User eliminado exitosamente.",
-                    "user" => $user
-                ]);
+                // Preparamos la respuesta (obtenemos el usuario actualizado para incluir el campo deleted_at)
+                $deletedUser = $this->userModel->getById($id);
+                unset($deletedUser[UserEntity::PASSWORD]);
+                
+                $this->responseHandler->sendSuccess(["user" => $deletedUser], "Usuario eliminado exitosamente.");
             } else {
-                self::sendError(500, "Error interno al intentar eliminar el User.");
+                $this->responseHandler->sendFailure("Error interno al intentar eliminar el usuario.", 500);
             }
         } catch (Exception $e) {
-            self::sendError(500, "Error al eliminar el User.", $e);
+            $this->responseHandler->sendFailure("Error al eliminar el usuario.", 500, $e);
         }
     }
 
