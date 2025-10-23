@@ -47,6 +47,7 @@ Route::get('/api/v1/user/getOne/Id/{id}', [UserController::class, 'getuserById']
 Route::post('/api/v1/user/getOne/email', [UserController::class, 'getUserByEmail'], [SessionValidator::class, 'hasActiveSession']); // Obtener usuario por email
 Route::put('/api/v1/user/update/{id}', [UserController::class, 'update'], [SessionValidator::class, 'hasActiveSession']); // Actualizar usuario
 Route::delete('/api/v1/user/deleteOne/{id}', [UserController::class, 'deleteOne'], [SessionValidator::class, 'hasActiveSession']); // Eliminar usuario (borrado lógico)
+Route::delete('/api/v1/user/deleteAll', [UserController::class, 'deleteAll'], [SessionValidator::class, 'hasActiveSession']); // Eliminar todos los usuarios (borrado lógico)
 
 
 // Rutas para EnglishClass con parámetros dinámicos 

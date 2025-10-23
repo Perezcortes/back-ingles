@@ -304,6 +304,27 @@ class UserController
         }
     }
 
+    /**
+     * Elimina lógicamente (soft delete) a todos los usuarios activos. (Servicio 21)
+     * @return void
+     */
+    public function deleteAll()
+    {
+        try {
+            // El modelo User::deleteAll() maneja la lógica de negocio (anular FKs)
+            // y la eliminación lógica masiva de todos los usuarios activos.
+            $success = $this->userModel->deleteAll();
+
+            if ($success) {
+                $this->responseHandler->sendSuccess(null, "Todos los usuarios eliminados exitosamente.");
+            } else {
+                $this->responseHandler->sendFailure("Error al realizar el borrado lógico masivo de usuarios.", 500);
+            }
+        } catch (Exception $e) {
+            $this->responseHandler->sendFailure("Error en el proceso de borrado masivo de usuarios. Revisar logs.", 500, $e);
+        }
+    }
+
     // Helper for error response
     private static function sendError($code, $message, $exception = null)
     {

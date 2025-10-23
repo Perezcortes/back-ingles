@@ -149,6 +149,46 @@ class User
         return $stmt->execute();
     }
 
+    /**
+     * Realiza el borrado lógico (soft delete) de TODOS los usuarios activos.
+     * Primero realiza la lógica para anular FKs y luego elimina masivamente.
+     * @return bool True si la operación es exitosa, false en caso contrario.
+     */
+    public function deleteAll()
+    {
+        try {
+            // Obtener todos los IDs de los usuarios activos para aplicar la lógica de negocio.
+            $activeUsers = $this->getAll(); // Usa el método getAll que filtra por DELETED_AT IS NULL
+
+            // Aplicar la lógica a CADA usuario activo
+            foreach ($activeUsers as $user) {
+                $userId = $user[UserEntity::ID];
+                $isCoordinator = (int)$user[UserEntity::IS_LEVEL_COORDINATOR];
+                $isProfessor = (int)$user[UserEntity::IS_PROFESSOR];
+
+                // Si era coordinador, anular la referencia en la tabla 'level'
+                if ($isCoordinator === 1) {
+                    $this->nullifyLevelCoordinator($userId);
+                }
+                
+                // Si era profesor, anular la referencia en la tabla 'english_class'
+                if ($isProfessor === 1) {
+                    $this->nullifyEnglishClassProfessor($userId);
+                }
+            }
+            
+            // Ejecutar el borrado lógico masivo
+            $query = "UPDATE " . $this->table_name . " SET " . UserEntity::DELETED_AT . " = NOW() WHERE " . UserEntity::DELETED_AT . " IS NULL";
+            $stmt = $this->conn->prepare($query);
+            return $stmt->execute();
+
+        } catch (Exception $e) {
+            // Manejo de errores (registrar la excepción si es necesario)
+            error_log("Error al eliminar todos los usuarios: " . $e->getMessage());
+            return false;
+        }
+    }
+
     // Método para eliminar de forma permanente
     public function deletePermanent($id)
     {
