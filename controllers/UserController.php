@@ -127,24 +127,34 @@ class UserController
         }
     }
 
-    public static function getUserByEmail($email)
+    /**
+     * Obtiene un usuario activo por su email.
+     * Este método recibe datos por POST (body) o GET (query params).
+     * @param array $data Contiene el campo 'email' del usuario.
+     * @return void
+     */
+    public function getUserByEmail($data)
     {
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return self::sendError(400, "El correo electrónico no es válido.");
+        if (!isset($data[UserEntity::EMAIL]) || !filter_var($data[UserEntity::EMAIL], FILTER_VALIDATE_EMAIL)) {
+            $this->responseHandler->sendFailure("El correo electrónico no es válido.", 400);
+            return;
         }
+        
+        $email = $data[UserEntity::EMAIL];
 
         try {
-            $userModel = new User();
-            $user = $userModel->obtenerPorEmail($email);
+            // findUserByEmail solo devuelve usuarios activos (deleted_at IS NULL)
+            $user = $this->userModel->findUserByEmail($email);
 
-            if ($user) {
-                http_response_code(200);
-                echo json_encode($user);
-            } else {
-                self::sendError(404, "User no encontrado");
+            if (!$user) {
+                $this->responseHandler->sendFailure("Usuario no encontrado.", 404);
+                return;
             }
+
+            unset($user[UserEntity::PASSWORD]);
+            $this->responseHandler->sendSuccess(["user" => $user], "Usuario encontrado exitosamente.");
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener el registro user", $e);
+            $this->responseHandler->sendFailure("Error al obtener el registro del usuario.", 500, $e);
         }
     }
 

@@ -44,7 +44,7 @@ Route::delete('/api/v1/student/deleteAll', [StudentController::class, 'deleteAll
 Route::post('/api/v1/user/create', [UserController::class, 'create'], [SessionValidator::class, 'hasActiveSession']); // Crear usuario 
 Route::get('/api/v1/user/getAll', [UserController::class, 'getAll'], [SessionValidator::class, 'hasActiveSession']); // Obtener todos los usuarios
 Route::get('/api/v1/user/getOne/Id/{id}', [UserController::class, 'getuserById'], );
-Route::get('/api/v1/user/getOne/Email/{id}', [UserController::class, 'getuserByEmail'], );
+Route::post('/api/v1/user/getOne/email', [UserController::class, 'getUserByEmail'], [SessionValidator::class, 'hasActiveSession']); // Obtener usuario por email
 Route::put('/api/v1/user/update/{id}', [UserController::class, 'update'],);
 Route::delete('/api/v1/user/deleteOne/{id}', [UserController::class, 'deleteOne'],);
 

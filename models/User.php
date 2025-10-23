@@ -39,29 +39,22 @@ class User
     }
 
     /**
-     * Método para encontrar un user activo por su dirección de email.
-     * @param string $email El correo electrónico del user a buscar.
-     * @return array|false Devuelve el array de user o false si no se encuentra.
-     * @throws \PDOException Si ocurre un error durante la ejecución de la consulta SQL.
+     * Encuentra un usuario activo por su dirección de email.
+     * @param string $email El correo electrónico del usuario a buscar.
+     * @return array|false Devuelve el array de usuario o false si no se encuentra.
      */
     public function findUserByEmail($email)
     {
-        // Consulta base
+        // Consulta base: busca por email y verifica que no esté eliminado
         $query = "SELECT * FROM " . $this->table_name .
             " WHERE " . UserEntity::EMAIL . " = :email " .
-            " AND " . UserEntity::DELETED_AT . " IS NULL " . // Aseguramos que retorne un estudiante activo.
+            " AND " . UserEntity::DELETED_AT . " IS NULL " . 
             " LIMIT 1";
             
-        // Si prepare() falla (ej. error de sintaxis) lanza PDOException
         $stmt = $this->conn->prepare($query);
-
-        // Vinculación de Parámetros: Enlaza los datos de entrada a los marcadores de posición.
         $stmt->bindParam(":email", $email);
-
-        // Si execute() falla (ej. conexión perdida), lanza PDOException
         $stmt->execute();
 
-        // Devuelve el array de user o 'false' si no se encuentra
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
