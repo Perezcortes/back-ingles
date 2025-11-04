@@ -20,5 +20,6 @@ COPY apache-swagger.conf /etc/apache2/conf-available/
 # 2. Habilita la configuración de Swagger
 RUN a2enconf apache-swagger
 
-# Copia todo lo que esté en el directorio donde se encuentra el Dockerfile.
+
 COPY . /var/www/html
+

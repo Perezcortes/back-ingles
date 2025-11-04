@@ -1,71 +1,164 @@
 <?php
+// models/Major.php
+
+/**
+ * @package App\Models
+ *
+ * Modelo para gestionar la tabla `major` (carreras) de la base de datos.
+ * Incluye operaciones CRUD con soporte para borrado lógico (soft delete).
+ */
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../entities/Major.php';
 
-class Major {
-    private $conexion;
+use App\Entities\Major as MajorEntity;
+use PDO;
 
-    public function __construct() {
-        $this->conexion = Database::getConnection();
+class Major
+{
+    private $conn;
+    private $table_name = "major";
+
+    public function __construct()
+    {
+        $this->conn = Database::getConnection();
     }
 
-    public function crear($datos) {
-        $campos = array_keys($datos);
-        $placeholders = array_fill(0, count($datos), '?');
-        $valores = array_values($datos);
-    
-        $sql = "INSERT INTO major (" . implode(',', $campos) . ") VALUES (" . implode(',', $placeholders) . ")";
-        $consulta = $this->conexion->prepare($sql);
-        return $consulta->execute($valores);
-    }
-
-    public function obtenerTodos() {
-        $consulta = $this->conexion->query("SELECT * FROM major WHERE is_deleted = FALSE ORDER BY id ASC");
-        return $consulta->fetchAll();
-    }
-
-    public function obtenerPorId($id) {
-        $consulta = $this->conexion->prepare("SELECT * FROM major WHERE id = ? AND is_deleted = FALSE");
-        $consulta->execute([$id]);
-        return $consulta->fetch();
-    }
-
-    public function actualizarPorId($id, $datos) {
-        $campos = [];
-        $valores = [];
-    
-        foreach ($datos as $campo => $valor) {
-            $campos[] = "$campo = ?";
-            $valores[] = $valor;
+    /**
+     * Crea un nuevo registro en la tabla `major`.
+     * @param array $data Los datos a insertar.
+     * @return int|bool El ID del nuevo registro o false si falla.
+     */
+    public function create($data)
+    {
+        $columns = implode(', ', array_keys($data));
+        $placeholders = ":" . implode(', :', array_keys($data));
+        $query = "INSERT INTO " . $this->table_name . " ({$columns}) VALUES ({$placeholders})";
+        
+        $stmt = $this->conn->prepare($query);
+        
+        // Uso de bindParam para enlazar variables de forma segura
+        foreach ($data as $key => &$value) {
+            $stmt->bindParam(":" . $key, $value);
         }
+        
+        if ($stmt->execute()) {
+            return $this->conn->lastInsertId();
+        }
+        
+        return false;
+    }
+
+    /**
+     * Obtiene todos los registros no eliminados lógicamente.
+     * @return array Un array de objetos o un array vacío.
+     */
+    public function getAll()
+    {
+        // Se verifica que DELETED_AT sea NULL para excluir los soft deleted
+        $query = "SELECT * FROM " . $this->table_name . " WHERE " . MajorEntity::DELETED_AT . " IS NULL ORDER BY " . MajorEntity::ID . " ASC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Obtiene un registro por ID.
+     * @param int $id El ID del registro.
+     * @return array|bool Un array asociativo del registro o false si no se encuentra.
+     */
+    public function getById($id)
+    {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE " . MajorEntity::ID . " = :id AND " . MajorEntity::DELETED_AT . " IS NULL LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Actualiza un registro por ID.
+     * @param int $id El ID del registro a actualizar.
+     * @param array $data Los datos a actualizar.
+     * @return bool True si la actualización fue exitosa, false de lo contrario.
+     */
+    public function updateById($id, $data)
+    {
+        $setClauses = [];
+        // Se añade la marca de tiempo de actualización
+        $data[MajorEntity::UPDATED_AT] = date('Y-m-d H:i:s');
+        
+        foreach ($data as $key => $value) {
+            $setClauses[] = "{$key} = :{$key}";
+        }
+        $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $setClauses) . " WHERE " . MajorEntity::ID . " = :id";
+        
+        $stmt = $this->conn->prepare($query);
+        
+        // Uso de bindParam
+        foreach ($data as $key => &$value) {
+            $stmt->bindParam(":" . $key, $value);
+        }
+        $stmt->bindParam(":id", $id, PDO::PARAM_INT);
+        
+        return $stmt->execute();
+    }
     
-        $valores[] = $id; 
+    /**
+     * Restaura un registro por ID (quita la marca de soft delete).
+     * @param int $id El ID del registro a restaurar.
+     * @return bool True si la restauración fue exitosa, false de lo contrario.
+     */
+    public function restoreById($id)
+    {
+        $query = "UPDATE " . $this->table_name . " SET " . MajorEntity::DELETED_AT . " = NULL WHERE " . MajorEntity::ID . " = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    /**
+     * Realiza un borrado lógico de un registro (soft delete).
+     * @param int $id El ID del registro a eliminar.
+     * @return bool True si la eliminación fue exitosa, false de lo contrario.
+     */
+    public function deleteById($id)
+    {
+        $query = "UPDATE " . $this->table_name . " SET " . MajorEntity::DELETED_AT . " = NOW() WHERE " . MajorEntity::ID . " = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    /**
+     * Elimina un registro permanentemente (hard delete).
+     * @param int $id El ID del registro a eliminar permanentemente.
+     * @return bool True si la eliminación fue exitosa, false de lo contrario.
+     */
+    public function deletePermanentById($id)
+    {
+        $query = "DELETE FROM " . $this->table_name . " WHERE " . MajorEntity::ID . " = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    /**
+     * Vacía la tabla permanentemente.
+     * @return bool True si la tabla fue vaciada, false de lo contrario.
+     */
+    public function truncateTable()
+    {
+        $query = "TRUNCATE TABLE " . $this->table_name;
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute();
+    }
     
-        $sql = "UPDATE major SET " . implode(", ", $campos) . " WHERE id = ?";
-        $consulta = $this->conexion->prepare($sql);
-        return $consulta->execute($valores);
-    }
-    // RESTORE - Restaurar un registro por ID
-    public function restaurarPorId($id) {
-        $consulta = $this->conexion->prepare("UPDATE major SET is_deleted = FALSE, deleted_at = NULL WHERE id = ?");
-        return $consulta->execute([$id]);
-    }
-
-    // DELETE - Parte del soft delete (marcar como eliminado un elemento)
-    public function eliminarPorId($id) {
-        $consulta = $this->conexion->prepare("UPDATE major SET is_deleted = TRUE, deleted_at = NOW() WHERE id = ?");
-        return $consulta->execute([$id]);
-    }
-
-    // DELETE - es del Hard delete (eliminar permanentemente un elemento)
-    public function eliminarPermanentePorId($id) {
-        $consulta = $this->conexion->prepare("DELETE FROM major WHERE id = ?");
-        return $consulta->execute([$id]);
-    }
-
-    // DELETE - Hard delete para vaciar la tabla
-    public function vaciarTabla() {
-        $consulta = $this->conexion->query("TRUNCATE TABLE major");
-        return $consulta;
+    /**
+     * Obtiene el ID del último registro insertado.
+     * @return int El ID del último registro.
+     */
+    public function lastInsertId() {
+        return $this->conn->lastInsertId();
     }
 }
