@@ -1,0 +1,786 @@
+openapi: 3.0.0
+info:
+  title: API - Gestión de Niveles de Idiomas
+  version: 1.0.0
+  description: Una API simple para la gestión de niveles de idioma, incluyendo operaciones CRUD básicas y autenticación.
+
+
+servers:
+  - url: http://localhost:8090/idiomas/api
+    description: Servidor de Desarrollo (Nginx Proxy)
+
+paths:
+  # Rutas de Niveles
+  /v1/level/getAll:
+    get:
+      summary: Obtener la lista de todos los niveles
+      tags:
+        - Niveles
+      description: Recupera una lista completa de todos los niveles de idioma definidos.
+      responses:
+        '200':
+          description: Lista de niveles recuperada exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Nivel'
+        '500':
+          description: Error interno del servidor
+
+  /v1/level/create:
+    post:
+      summary: Crear un nuevo nivel
+      tags:
+        - Niveles
+      description: Permite la creación de un nuevo nivel de idioma.
+      security:
+        - cookieAuthUser: [] 
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NivelInput'
+      responses:
+        '201':
+          description: Nivel creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Nivel'
+        '400':
+          description: Solicitud incorrecta (Datos de entrada inválidos)
+  
+  /v1/level/getOne/{id}:
+    get:
+      summary: Obtener un nivel por su ID
+      tags:
+        - Niveles
+      description: Recupera los detalles de un nivel de idioma específico utilizando su ID único.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: El ID único del nivel.
+          example: 3
+      responses:
+        '200':
+          description: Detalles del nivel recuperados exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Nivel'
+        '404':
+          description: Nivel no encontrado
+  
+  /v1/level/update/{id}:
+    put:
+      summary: Actualizar un nivel por su ID
+      tags:
+        - Niveles
+      description: Actualiza los detalles de un nivel existente.
+      security:
+        - cookieAuthUser: [] 
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: El ID único del nivel a actualizar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NivelInput'
+      responses:
+        '200':
+          description: Nivel actualizado exitosamente
+        '404':
+          description: Nivel no encontrado
+        '400':
+          description: Datos de entrada inválidos
+          
+  /v1/level/deleteOne/{id}:
+    delete:
+      summary: Eliminar un nivel por su ID (Soft Delete)
+      tags:
+        - Niveles
+      description: Marca un nivel como eliminado, sin borrarlo permanentemente.
+      security:
+        - cookieAuthUser: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: El ID único del nivel a eliminar.
+      responses:
+        '204':
+          description: Nivel eliminado exitosamente
+        '404':
+          description: Nivel no encontrado
+          
+  # RUTAS DE AUTENTICACIÓN
+  /v1/student/login:
+    post:
+      summary: Iniciar Sesión para Alumnos
+      tags:
+        - Autenticación (Alumno)
+      description: Autentica a un alumno y crea una sesión.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+            example:
+              email: "alumno.ejemplo@email.com"
+              password: "password123"
+      responses:
+        '200':
+          description: Inicio de sesión exitoso
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: 'PHPSESSID=abcde12345; Path=/; HttpOnly' 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+            
+        '401':
+          description: Credenciales inválidas
+
+  /v1/student/logout:
+    post:
+      summary: Cerrar Sesión para Alumnos
+      tags:
+        - Autenticación (Alumno)
+      description: Cierra la sesión activa del alumno. Requiere sesión válida.
+      security:
+        - cookieAuthStudent: []
+      responses:
+        '200':
+          description: Sesión cerrada exitosamente
+        '401':
+          description: No autorizado (sesión no válida)
+
+  /v1/user/login:
+    post:
+      summary: Iniciar Sesión para Usuarios (Profesor/Admin)
+      tags:
+        - Autenticación (Usuario)
+      description: Autentica a un usuario (Profesor, Coordinador, Admin) y crea una sesión.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        '200':
+          description: Inicio de sesión exitoso
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: 'PHPSESSID=fghij67890; Path=/; HttpOnly' 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Credenciales inválidas
+
+  /v1/user/logout:
+    post:
+      summary: Cerrar Sesión para Usuarios
+      tags:
+        - Autenticación (Usuario)
+      description: Cierra la sesión activa del usuario. Requiere sesión válida.
+      security:
+        - cookieAuthUser: []
+      responses:
+        '200':
+          description: Sesión cerrada exitosamente
+        '401':
+          description: No autorizado (sesión no válida)
+          
+  # RUTAS DE USUARIOS 
+  /v1/user/create:
+    post:
+      summary: Crear un nuevo Usuario
+      tags:
+        - Usuarios
+      description: Registra un nuevo usuario (Profesor, Coordinador, Administrador).
+      security:
+        - cookieAuthUser: [] 
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+      responses:
+        '201':
+          description: Usuario creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Solicitud incorrecta (Email ya existe o datos inválidos)
+          
+  /v1/user/getAll:
+    get:
+      summary: Obtener todos los Usuarios
+      tags:
+        - Usuarios
+      description: Obtiene una lista de todos los usuarios registrados.
+      security:
+        - cookieAuthUser: []
+      responses:
+        '200':
+          description: Lista de usuarios recuperada exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: No autorizado
+          
+  /v1/user/getOne/Id/{id}:
+    get:
+      summary: Obtener un Usuario por ID
+      tags:
+        - Usuarios
+      description: Obtiene los detalles de un usuario específico por su ID.
+      security:
+        - cookieAuthUser: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: El ID único del usuario.
+      responses:
+        '200':
+          description: Detalles del usuario recuperados exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Usuario no encontrado
+          
+  /v1/user/getOne/Email/{email}:
+    get:
+      summary: Obtener un Usuario por Email
+      tags:
+        - Usuarios
+      description: Obtiene los detalles de un usuario por su dirección de correo electrónico.
+      security:
+        - cookieAuthUser: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+          description: El correo electrónico único del usuario.
+          example: "profesor.ejemplo@email.com"
+      responses:
+        '200':
+          description: Detalles del usuario recuperados exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Usuario no encontrado
+          
+  /v1/user/update/{id}:
+    put:
+      summary: Actualizar un Usuario por ID
+      tags:
+        - Usuarios
+      description: Actualiza los detalles de un usuario existente.
+      security:
+        - cookieAuthUser: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: El ID único del usuario a actualizar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateInput'
+      responses:
+        '200':
+          description: Usuario actualizado exitosamente
+        '404':
+          description: Usuario no encontrado
+          
+  /v1/user/deleteOne/{id}:
+    delete:
+      summary: Eliminar un Usuario por ID (Soft Delete)
+      tags:
+        - Usuarios
+      description: Marca un usuario como eliminado.
+      security:
+        - cookieAuthUser: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: El ID único del usuario a eliminar.
+      responses:
+        '204':
+          description: Usuario eliminado exitosamente
+        '404':
+          description: Usuario no encontrado
+
+  # Rutas de Alumnos
+  /v1/student/create:
+    post:
+      summary: Crear un nuevo Alumno
+      tags:
+        - Alumnos
+      description: Registra un nuevo alumno en el sistema.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentInput'
+      responses:
+        '201':
+          description: Alumno creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+        '400':
+          description: Solicitud incorrecta (Matrícula o Email ya existen, o datos inválidos)
+          
+  /v1/student/getAll:
+    get:
+      summary: Obtener todos los Alumnos
+      tags:
+        - Alumnos
+      description: Obtiene una lista de todos los alumnos registrados.
+      responses:
+        '200':
+          description: Lista de alumnos recuperada exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Student'
+        '500':
+          description: Error interno del servidor
+
+  /v1/student/getOne/Id/{id}:
+    get:
+      summary: Obtener un Alumno por ID
+      tags:
+        - Alumnos
+      description: Obtiene los detalles de un alumno específico por su ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: El ID único del alumno.
+      responses:
+        '200':
+          description: Detalles del alumno recuperados exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+        '404':
+          description: Alumno no encontrado
+          
+  /v1/student/getOne/Email/{email}:
+    get:
+      summary: Obtener un Alumno por Email
+      tags:
+        - Alumnos
+      description: Obtiene los detalles de un alumno por su dirección de correo electrónico.
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+          description: El correo electrónico único del alumno.
+          example: "juan.perez@university.edu"
+      responses:
+        '200':
+          description: Detalles del alumno recuperados exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+        '404':
+          description: Alumno no encontrado
+          
+  /v1/student/getOne/Matricula/{matricula}:
+    get:
+      summary: Obtener un Alumno por Matrícula
+      tags:
+        - Alumnos
+      description: Obtiene los detalles de un alumno por su número de matrícula.
+      parameters:
+        - name: matricula
+          in: path
+          required: true
+          schema:
+            type: string
+          description: El número de matrícula único del alumno.
+          example: "A00123456"
+      responses:
+        '200':
+          description: Detalles del alumno recuperados exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+        '404':
+          description: Alumno no encontrado
+          
+  /v1/student/update/{id}:
+    put:
+      summary: Actualizar un Alumno por ID
+      tags:
+        - Alumnos
+      description: Actualiza los detalles de un alumno existente.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: El ID único del alumno a actualizar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentUpdateInput'
+      responses:
+        '200':
+          description: Alumno actualizado exitosamente
+        '404':
+          description: Alumno no encontrado
+        '400':
+          description: Datos de entrada inválidos
+          
+  /v1/student/deleteOne/{id}:
+    delete:
+      summary: Eliminar un Alumno por ID (Soft Delete)
+      tags:
+        - Alumnos
+      description: Marca un alumno como eliminado, sin borrarlo permanentemente.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: El ID único del alumno a eliminar.
+      responses:
+        '204':
+          description: Alumno eliminado exitosamente
+        '404':
+          description: Alumno no encontrado
+
+# ESQUEMAS
+components:
+  schemas:
+    # Nivel
+    Nivel:
+      type: object
+      description: Esquema completo de un nivel de idioma.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        level_name:
+          type: string
+        description:
+          type: string
+        id_level_coordinator:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - id
+        - level_name
+        - description
+
+    NivelInput:
+      type: object
+      description: Esquema para la creación/actualización de un nivel.
+      properties:
+        level_name:
+          type: string
+          example: C1 Advanced
+        description:
+          type: string
+          example: Puede expresarse con fluidez y espontaneidad.
+        id_level_coordinator:
+          type: integer
+          nullable: true
+          example: 8
+      required:
+        - level_name
+        - description
+        
+    # Student
+    Student:
+      type: object
+      description: Esquema completo de un alumno.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          description: ID único del alumno.
+        full_name:
+          type: string
+          description: Nombre completo del alumno.
+        id_major:
+          type: integer
+          description: ID de la carrera/mayor del alumno.
+        id_level:
+          type: integer
+          description: ID del nivel de idioma actual del alumno.
+        major_group:
+          type: string
+          description: Grupo de la carrera (e.g., ISC 101).
+        id_english_class:
+          type: integer
+          nullable: true
+          description: ID del grupo de inglés asignado.
+        matricula:
+          type: string
+          description: Número de matrícula único.
+        period:
+          type: string
+          description: Período actual del alumno.
+        email:
+          type: string
+          format: email
+          description: Correo electrónico único.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - id
+        - full_name
+        - id_major
+        - id_level
+        - major_group
+        - matricula
+        - period
+        - email
+        
+    StudentInput:
+      type: object
+      description: Esquema para la creación de un nuevo alumno.
+      properties:
+        full_name:
+          type: string
+          example: Mariana López
+        id_major:
+          type: integer
+          example: 2
+        id_level:
+          type: integer
+          example: 4
+        major_group:
+          type: string
+          example: IS102
+        id_english_class:
+          type: integer
+          nullable: true
+          example: 10
+        matricula:
+          type: string
+          example: A00199876
+        period:
+          type: string
+          example: 2024-2025
+        email:
+          type: string
+          format: email
+          example: mariana.lopez@example.com
+        password:
+          type: string
+          description: Contraseña inicial del alumno.
+          example: "securePass"
+      required:
+        - full_name
+        - id_major
+        - id_level
+        - major_group
+        - matricula
+        - period
+        - email
+        - password
+        
+    StudentUpdateInput:
+      type: object
+      description: Esquema para la actualización de un alumno (todos los campos son opcionales, pero se deben enviar los que se van a modificar).
+      allOf:
+        - $ref: '#/components/schemas/StudentInput'
+      properties:
+        password:
+          type: string
+          description: Nueva contraseña (opcional).
+          example: "newSecurePass"
+      required: [] 
+
+    # User
+    User:
+      type: object
+      description: Esquema completo de un usuario (Profesor, Coordinador, Administrador).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        full_name:
+          type: string
+        office:
+          type: string
+        email:
+          type: string
+          format: email
+        is_professor:
+          type: boolean
+        is_level_coordinator:
+          type: boolean
+        is_administrator:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - id
+        - full_name
+        - email
+        
+    # Login
+    LoginInput:
+      type: object
+      description: Esquema para la solicitud de inicio de sesión.
+      properties:
+        email:
+          type: string
+          format: email
+          example: usuario@example.com
+        password:
+          type: string
+          example: password123
+      required:
+        - email
+        - password
+        
+    # Input para Creación/Actualización de Usuarios
+    UserInput:
+      type: object
+      description: Esquema para la creación de un nuevo usuario.
+      properties:
+        full_name:
+          type: string
+          example: Ricardo Solis
+        office:
+          type: string
+          example: Edificio A, Piso 2
+        email:
+          type: string
+          format: email
+          example: rsolis@university.edu
+        password:
+          type: string
+          description: Contraseña inicial.
+          example: P@sswOrd2024
+        is_professor:
+          type: boolean
+          example: true
+        is_level_coordinator:
+          type: boolean
+          example: false
+        is_administrator:
+          type: boolean
+          example: false
+      required:
+        - full_name
+        - email
+        - password
+        - is_professor
+        - is_level_coordinator
+        - is_administrator
+        
+    UserUpdateInput:
+      type: object
+      description: Esquema para la actualización de un usuario.
+      allOf:
+        - $ref: '#/components/schemas/UserInput'
+      properties:
+        password:
+          type: string
+          description: Nueva contraseña (opcional).
+          example: "newSecurePass2"
+      required: [] 
+        
+  # SEGURIDAD DE SESIÓN
+  securitySchemes:
+    cookieAuthStudent:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID
+      description: Cookie de sesión de PHP por defecto (PHPSESSID) para autenticación de alumnos.
+    cookieAuthUser:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID 
+      description: Cookie de sesión de PHP por defecto (PHPSESSID) para autenticación de usuarios.
