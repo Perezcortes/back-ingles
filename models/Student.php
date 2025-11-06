@@ -42,6 +42,55 @@ class Student
     }
 
     /**
+     * Crea múltiples registros en la tabla `student` usando una transacción para garantizar atomicidad.
+     *
+     * @param array $dataArray Array de arrays con los datos de los estudiantes.
+     * @return array|bool Array de IDs insertados o false si la transacción falla.
+     */
+    public function createMany(array $dataArray)
+    {
+        if (empty($dataArray)) {
+            return []; // Retorna un array vacío si no hay datos.
+        }
+
+        $this->conn->beginTransaction();
+        
+        try {
+            $insertedIds = [];
+            
+            // Prepara la consulta usando las claves del primer registro como base.
+            $firstRecord = reset($dataArray);
+            $columns = implode(', ', array_keys($firstRecord));
+            $placeholders = ":" . implode(', :', array_keys($firstRecord));
+            $query = "INSERT INTO " . $this->table_name . " ({$columns}) VALUES ({$placeholders})";
+            $stmt = $this->conn->prepare($query);
+
+            foreach ($dataArray as $data) {
+                // El binding debe hacerse con la clave del array para el valor actual del registro.
+                foreach ($data as $key => &$value) {
+                    $stmt->bindParam(":" . $key, $data[$key]); 
+                }
+                
+                // Ejecuta la sentencia para el registro actual
+                if ($stmt->execute()) {
+                    $insertedIds[] = $this->conn->lastInsertId();
+                } else {
+                    $this->conn->rollBack();
+                    return false; // Falla la inserción de un registro
+                }
+            }
+            
+            $this->conn->commit();
+            return $insertedIds;
+
+        } catch (\PDOException $e) {
+            $this->conn->rollBack();
+            error_log("Error creating multiple students: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Actualiza un estudiante por ID.
      * @param int $id El ID del estudiante a actualizar.
      * @param array $data Los datos a actualizar.
