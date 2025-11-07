@@ -13,8 +13,13 @@ RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/Allo
 # Instala las extensiones de PHP esenciales para la conectividad a la base de datos.
 RUN docker-php-ext-install pdo pdo_mysql mysqli
 
-# Copia todo lo que esté en el directorio donde se encuentra el Dockerfile.
+# COPIA Y HABILITA LA CONFIGURACIÓN DE SWAGGER AQUI
+# 1. Copia el archivo .conf al directorio de configuración de Apache
+COPY apache-swagger.conf /etc/apache2/conf-available/
+
+# 2. Habilita la configuración de Swagger
+RUN a2enconf apache-swagger
+
+
 COPY . /var/www/html
 
-#Puerto 80 expuesto por default con esta imagen 
-#EXPOSE 80
