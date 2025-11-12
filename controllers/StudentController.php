@@ -131,6 +131,49 @@ class StudentController
     }
 
     /**
+     * Obtiene registros de estudiantes aplicando filtros de búsqueda, nivel y carrera.
+     * * @param array $data Contiene 'busqueda', 'nivel_id' y/o 'carrera_id'.
+     * @return void
+     */
+    public function getStudentsByFilters($data)
+    {
+        $busqueda = trim($data['busqueda'] ?? '');
+        $nivel_id = $data['nivel_id'] ?? null;
+        $carrera_id = $data['carrera_id'] ?? null;
+
+        // Validar que al menos un filtro esté presente
+        if (empty($busqueda) && empty($nivel_id) && empty($carrera_id)) {
+            $this->responseHandler->sendFailure("Debe proporcionar al menos un criterio de búsqueda (busqueda, nivel_id, o carrera_id).", 400);
+            return;
+        }
+
+        $filters = [
+            'busqueda' => $busqueda,
+            'nivel_id' => $nivel_id,
+            'carrera_id' => $carrera_id,
+        ];
+        
+        try {
+            // Llamada al método del modelo con los filtros dinámicos
+            $students = $this->studentModel->getStudentsByFilters($filters);
+
+            if (empty($students)) {
+                $this->responseHandler->sendFailure("No se encontraron estudiantes con los filtros proporcionados.", 404);
+                return;
+            }
+
+            // Eliminar la contraseña de la respuesta
+            foreach ($students as $key => $student) {
+                unset($students[$key][StudentEntity::PASSWORD]);
+            }
+
+            $this->responseHandler->sendSuccess(["students" => $students], "Estudiantes encontrados exitosamente.");
+        } catch (Exception $e) {
+            $this->responseHandler->sendFailure("Error al aplicar los filtros y obtener los estudiantes.", 500, $e);
+        }
+    }
+
+    /**
      * Crea un nuevo estudiante.
      * @param array $data Los datos del nuevo estudiante.
      * @return void

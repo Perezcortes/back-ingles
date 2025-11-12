@@ -17,9 +17,13 @@ class User
         $this->conn = Database::getConnection();
     }
 
+    /**
+     * Obtiene todos los registros de usuarios activos (no eliminados lógicamente).
+     * @return array Un array de objetos o un array vacío.
+     */
     public function getAll()
     {
-        $query = "SELECT * FROM " . $this->table_name . " ORDER BY " . UserEntity::ID . " ASC";
+        $query = "SELECT * FROM " . $this->table_name . " WHERE " . UserEntity::DELETED_AT . " IS NULL ORDER BY " . UserEntity::ID . " ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -35,32 +39,30 @@ class User
     }
 
     /**
-     * Método para encontrar un user activo por su dirección de email.
-     * @param string $email El correo electrónico del user a buscar.
-     * @return array|false Devuelve el array de user o false si no se encuentra.
-     * @throws \PDOException Si ocurre un error durante la ejecución de la consulta SQL.
+     * Encuentra un usuario activo por su dirección de email.
+     * @param string $email El correo electrónico del usuario a buscar.
+     * @return array|false Devuelve el array de usuario o false si no se encuentra.
      */
     public function findUserByEmail($email)
     {
-        // Consulta base
+        // Consulta base: busca por email y verifica que no esté eliminado
         $query = "SELECT * FROM " . $this->table_name .
             " WHERE " . UserEntity::EMAIL . " = :email " .
-            " AND " . UserEntity::DELETED_AT . " IS NULL " . // Aseguramos que retorne un estudiante activo.
+            " AND " . UserEntity::DELETED_AT . " IS NULL " . 
             " LIMIT 1";
             
-        // Si prepare() falla (ej. error de sintaxis) lanza PDOException
         $stmt = $this->conn->prepare($query);
-
-        // Vinculación de Parámetros: Enlaza los datos de entrada a los marcadores de posición.
         $stmt->bindParam(":email", $email);
-
-        // Si execute() falla (ej. conexión perdida), lanza PDOException
         $stmt->execute();
 
-        // Devuelve el array de user o 'false' si no se encuentra
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Crea un nuevo registro en la tabla `user`.
+     * @param array $data Los datos a insertar.
+     * @return int|bool El ID del nuevo registro o false si falla.
+     */
     public function create($data)
     {
         $columns = implode(', ', array_keys($data));
@@ -73,9 +75,19 @@ class User
             $stmt->bindParam(":" . $key, $value);
         }
 
-        return $stmt->execute();
+        if ($stmt->execute()) {
+            return $this->conn->lastInsertId(); // Devolvemos el ID
+        }
+
+        return false;
     }
 
+    /**
+     * Actualiza un registro de usuario por su ID.
+     * @param int $id El ID del usuario a actualizar.
+     * @param array $data Los datos a actualizar.
+     * @return bool True si la actualización fue exitosa, false en caso contrario.
+     */
     public function updateById($id, $data)
     {
         $setClauses = [];
@@ -96,12 +108,85 @@ class User
         return $stmt->execute();
     }
 
+    /**
+     * Anula el ID de un coordinador de nivel en la tabla 'level' si deja de ser coordinador.
+     * @param int $coordinatorId El ID del coordinador a anular.
+     * @return bool True en éxito, false en fallo.
+     */
+    public function nullifyLevelCoordinator($coordinatorId)
+    {
+        // tabla 'level' y columna 'id_level_coordinator'
+        $query = "UPDATE level SET id_level_coordinator = NULL WHERE id_level_coordinator = :coordinatorId";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':coordinatorId', $coordinatorId, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    /**
+     * Anula el ID de un profesor en la tabla 'english_class' si deja de ser profesor.
+     * @param int $professorId El ID del profesor a anular.
+     * @return bool True en éxito, false en fallo.
+     */
+    public function nullifyEnglishClassProfessor($professorId)
+    {
+        // tabla 'english_class' y columna 'id_professor'
+        $query = "UPDATE english_class SET id_professor = NULL WHERE id_professor = :professorId";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':professorId', $professorId, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    /**
+     * Realiza el borrado lógico (soft delete) de un usuario.
+     * @param int $id ID del usuario a eliminar.
+     * @return bool True en éxito, false en fallo.
+     */
     public function deleteById($id)
     {
         $query = "UPDATE " . $this->table_name . " SET " . UserEntity::DELETED_AT . " = NOW() WHERE " . UserEntity::ID . " = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
         return $stmt->execute();
+    }
+
+    /**
+     * Realiza el borrado lógico (soft delete) de TODOS los usuarios activos.
+     * Primero realiza la lógica para anular FKs y luego elimina masivamente.
+     * @return bool True si la operación es exitosa, false en caso contrario.
+     */
+    public function deleteAll()
+    {
+        try {
+            // Obtener todos los IDs de los usuarios activos para aplicar la lógica de negocio.
+            $activeUsers = $this->getAll(); // Usa el método getAll que filtra por DELETED_AT IS NULL
+
+            // Aplicar la lógica a CADA usuario activo
+            foreach ($activeUsers as $user) {
+                $userId = $user[UserEntity::ID];
+                $isCoordinator = (int)$user[UserEntity::IS_LEVEL_COORDINATOR];
+                $isProfessor = (int)$user[UserEntity::IS_PROFESSOR];
+
+                // Si era coordinador, anular la referencia en la tabla 'level'
+                if ($isCoordinator === 1) {
+                    $this->nullifyLevelCoordinator($userId);
+                }
+                
+                // Si era profesor, anular la referencia en la tabla 'english_class'
+                if ($isProfessor === 1) {
+                    $this->nullifyEnglishClassProfessor($userId);
+                }
+            }
+            
+            // Ejecutar el borrado lógico masivo
+            $query = "UPDATE " . $this->table_name . " SET " . UserEntity::DELETED_AT . " = NOW() WHERE " . UserEntity::DELETED_AT . " IS NULL";
+            $stmt = $this->conn->prepare($query);
+            return $stmt->execute();
+
+        } catch (Exception $e) {
+            // Manejo de errores (registrar la excepción si es necesario)
+            error_log("Error al eliminar todos los usuarios: " . $e->getMessage());
+            return false;
+        }
     }
 
     // Método para eliminar de forma permanente
