@@ -104,7 +104,7 @@ class UserController
             $this->responseHandler->sendFailure("Error al obtener los registros de usuarios.", 500, $e);
         }
     }
-
+ 
     // Get user by ID
     public static function getUserById($id)
     {
@@ -114,7 +114,7 @@ class UserController
 
         try {
             $userModel = new User();
-            $user = $userModel->obtenerPorId($id);
+            $user = $userModel->getById($id);
 
             if ($user) {
                 http_response_code(200);
