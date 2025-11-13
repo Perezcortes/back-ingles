@@ -105,25 +105,34 @@ class UserController
         }
     }
  
-    // Get user by ID
-    public static function getUserById($id)
+    /**
+     * Obtiene un usuario por su ID (Servicio 17).
+     * @param int $id ID del usuario a obtener.
+     * @return void
+     */
+    public function getuserById($id)
     {
+        // Validación de ID numérico
         if (!is_numeric($id)) {
-            return self::sendError(400, "El id debe ser numérico.");
+            $this->responseHandler->sendFailure("El ID debe ser numérico.", 400);
+            return;
         }
 
         try {
-            $userModel = new User();
-            $user = $userModel->getById($id);
+            $user = $this->userModel->getById($id);
 
-            if ($user) {
-                http_response_code(200);
-                echo json_encode($user);
-            } else {
-                self::sendError(404, "User no encontrado");
+            if (!$user) {
+                $this->responseHandler->sendFailure("Usuario no encontrado.", 404);
+                return;
             }
+
+            // Quitar la contraseña de la respuesta
+            unset($user[UserEntity::PASSWORD]);
+            
+            $this->responseHandler->sendSuccess(["user" => $user], "Usuario encontrado exitosamente.");
+
         } catch (Exception $e) {
-            self::sendError(500, "Error al obtener el registro user", $e);
+            $this->responseHandler->sendFailure("Error al obtener el registro del usuario.", 500, $e);
         }
     }
 
