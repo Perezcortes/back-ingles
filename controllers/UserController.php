@@ -84,8 +84,7 @@ class UserController
     }
 
     /**
-     * Obtiene todos los usuarios activos.
-     * Este es el Servicio 16: Obtener Todos los Usuarios.
+     * Obtiene todos los usuarios activos (Servicio 16).
      * @return void
      */
     public function getAll()
@@ -94,10 +93,9 @@ class UserController
             // Llama al método del modelo que filtra por DELETED_AT IS NULL
             $users = $this->userModel->getAll();
             
-            // Eliminar la contraseña de todos los usuarios
-            foreach ($users as &$user) {
-                unset($user[UserEntity::PASSWORD]);
-            }
+            // foreach ($users as &$user) {
+            //     unset($user[UserEntity::PASSWORD]); 
+            // }
 
             $this->responseHandler->sendSuccess(["users" => $users], "Usuarios encontrados exitosamente.");
         } catch (Exception $e) {
@@ -127,7 +125,7 @@ class UserController
             }
 
             // Quitar la contraseña de la respuesta
-            unset($user[UserEntity::PASSWORD]);
+            // unset($user[UserEntity::PASSWORD]); 
             
             $this->responseHandler->sendSuccess(["user" => $user], "Usuario encontrado exitosamente.");
 

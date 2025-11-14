@@ -39,6 +39,11 @@ class StudentController
     {
         try {
             $students = $this->studentModel->getAll();
+            
+            foreach ($students as &$student) {
+                unset($student[StudentEntity::PASSWORD]); 
+            }
+
             $this->responseHandler->sendSuccess(["students" => $students], "Estudiantes encontrados exitosamente.");
         } catch (Exception $e) {
             $this->responseHandler->sendFailure("Error al obtener los registros de estudiantes.", 500, $e);
