@@ -40,9 +40,9 @@ class StudentController
         try {
             $students = $this->studentModel->getAll();
             
-            foreach ($students as &$student) {
-                unset($student[StudentEntity::PASSWORD]); 
-            }
+            //foreach ($students as &$student) { 
+            //    unset($student[StudentEntity::PASSWORD]); 
+            //}
 
             $this->responseHandler->sendSuccess(["students" => $students], "Estudiantes encontrados exitosamente.");
         } catch (Exception $e) {
@@ -70,7 +70,7 @@ class StudentController
                 return;
             }
 
-            unset($student[StudentEntity::PASSWORD]);
+            //unset($student[StudentEntity::PASSWORD]);
             $this->responseHandler->sendSuccess(["student" => $student], "Estudiante encontrado exitosamente.");
         } catch (Exception $e) {
             $this->responseHandler->sendFailure("Error al obtener el registro del estudiante.", 500, $e);
