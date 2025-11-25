@@ -22,11 +22,11 @@ Route::post('/api/v1/user/login', [UserLoginController::class, 'login']); //vali
 Route::post('/api/v1/user/logout', [UserLoginController::class, 'logout'], [SessionValidator::class, 'hasActiveSession']); //validado
 
 // Rutas para Level con parámetros dinámicos 
-Route::post('/api/v1/level/create', [LevelController::class, 'create'],);
-Route::get('/api/v1/level/getOne/{id}', [LevelController::class, 'getOne'], );
-Route::get('/api/v1/level/getAll', [LevelController::class, 'getAll'],);
-Route::put('/api/v1/level/update/{id}', [LevelController::class, 'update'],);
-Route::delete('/api/v1/level/deleteOne/{id}', [LevelController::class, 'deleteOne'],);
+Route::post('/api/v1/level/create', [LevelController::class, 'create'], [SessionValidator::class, 'hasActiveSession']);
+Route::get('/api/v1/level/getOne/{id}', [LevelController::class, 'getOneById'], [SessionValidator::class, 'hasActiveSession']);
+Route::get('/api/v1/level/getAll', [LevelController::class, 'getAll'], [SessionValidator::class, 'hasActiveSession']);
+Route::put('/api/v1/level/update/{id}', [LevelController::class, 'update'], [SessionValidator::class, 'hasActiveSession']);
+Route::delete('/api/v1/level/deleteOne/{id}', [LevelController::class, 'deleteOne'], [SessionValidator::class, 'hasActiveSession']);
 
 // Rutas para student con parámetros dinámicos
 Route::post('/api/v1/student/create', [StudentController::class, 'create'],[SessionValidator::class, 'hasActiveSession']);//validado

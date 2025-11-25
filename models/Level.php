@@ -55,54 +55,79 @@ class Level
     }
 
     /**
-     * Obtiene un registro por ID.
-     * @param int $id El ID del registro.
-     * @return array|bool Un array asociativo del registro o false si no se encuentra.
+     * Obtiene un nivel por su ID.
+     * @param int $id ID del nivel.
+     * @return array|false
      */
     public function getById($id)
     {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE " . LevelEntity::ID . " = :id AND " . LevelEntity::DELETED_AT . " IS NULL LIMIT 1";
+        $query = "SELECT * FROM " . $this->table_name . " WHERE " . LevelEntity::ID . " = :id";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->bindParam(":id", $id);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     /**
-     * Actualiza un registro por ID.
-     * @param int $id El ID del registro a actualizar.
-     * @param array $data Los datos a actualizar.
-     * @return bool True si la actualización fue exitosa, false de lo contrario.
+     * Busca un nivel activo por su nombre para verificar unicidad.
+     * @param string $levelName Nombre del nivel.
+     * @return array|false
+     */
+    public function findByName($levelName)
+    {
+        $query = "SELECT * FROM " . $this->table_name . 
+                 " WHERE " . LevelEntity::LEVEL_NAME . " = :level_name AND " . 
+                 LevelEntity::DELETED_AT . " IS NULL LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":level_name", $levelName);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Actualiza los datos de un nivel existente por su ID.
+     * @param int $id ID del nivel a actualizar.
+     * @param array $data Los datos a modificar.
+     * @return bool True en éxito, false en fallo.
      */
     public function updateById($id, $data)
     {
         $setClauses = [];
-        $data[LevelEntity::UPDATED_AT] = date('Y-m-d H:i:s');
+        // Añadir la marca de tiempo de actualización
+        $data[LevelEntity::UPDATED_AT] = date('Y-m-d H:i:s'); 
+        
         foreach ($data as $key => $value) {
+            // Asegura que los valores nulos se mapeen correctamente a la cláusula SET
             $setClauses[] = "{$key} = :{$key}";
         }
+
+        if (empty($setClauses)) {
+            return false; // No hay nada que actualizar
+        }
+
         $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $setClauses) . " WHERE " . LevelEntity::ID . " = :id";
-        
+
         $stmt = $this->conn->prepare($query);
-        
+
         foreach ($data as $key => &$value) {
+            // Bindear todos los parámetros, incluyendo el de la marca de tiempo
             $stmt->bindParam(":" . $key, $value);
         }
         $stmt->bindParam(":id", $id);
-        
+
         return $stmt->execute();
     }
     
     /**
-     * Realiza un borrado lógico de un registro.
-     * @param int $id El ID del registro a eliminar.
-     * @return bool True si la eliminación fue exitosa, false de lo contrario.
+     * Realiza el borrado lógico (soft delete) de un nivel.
+     * @param int $id ID del nivel a eliminar.
+     * @return bool True en éxito, false en fallo.
      */
     public function deleteById($id)
     {
         $query = "UPDATE " . $this->table_name . " SET " . LevelEntity::DELETED_AT . " = NOW() WHERE " . LevelEntity::ID . " = :id";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->bindParam(":id", $id);
         return $stmt->execute();
     }
 
