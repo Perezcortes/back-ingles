@@ -62,11 +62,11 @@ Route::post('/api/v1/englishClass/restore/{id}', [EnglishClassController::class,
 Route::delete('/api/v1/englishClass/deletePermanent/{id}', [EnglishClassController::class, 'deletePermanent']); // Eliminar permanentemente
 
 // Rutas para Major con parámetros dinámicos
-Route::post('/api/v1/major/create', [MajorController::class, 'create']);
-Route::get('/api/v1/major/getOne/{id}', [MajorController::class, 'getOne']);
-Route::get('/api/v1/major/getAll', [MajorController::class, 'getAll']);
-Route::put('/api/v1/major/update/{id}', [MajorController::class, 'update']);
-Route::delete('/api/v1/major/deleteOne/{id}', [MajorController::class, 'deleteOne']);
+Route::post('/api/v1/major/create', [MajorController::class, 'create'], [SessionValidator::class, 'hasActiveSession']);
+Route::get('/api/v1/major/getOne/{id}', [MajorController::class, 'getOneById'], [SessionValidator::class, 'hasActiveSession']);
+Route::get('/api/v1/major/getAll', [MajorController::class, 'getAll'], [SessionValidator::class, 'hasActiveSession']);
+Route::put('/api/v1/major/update/{id}', [MajorController::class, 'update'], [SessionValidator::class, 'hasActiveSession']);
+Route::delete('/api/v1/major/deleteOne/{id}', [MajorController::class, 'deleteOne'], [SessionValidator::class, 'hasActiveSession']);
 Route::post('/api/v1/major/restore/{id}', [MajorController::class, 'restore']); // Ruta para restaurar un major
 Route::delete('/api/v1/major/deletePermanent/{id}', [MajorController::class, 'deletePermanent']); // Ruta para eliminar permanentemente un major
 

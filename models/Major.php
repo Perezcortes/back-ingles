@@ -5,7 +5,6 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../entities/Major.php';
 
 use App\Entities\Major as MajorEntity;
-use PDO;
 
 class Major
 {
@@ -18,8 +17,8 @@ class Major
     }
 
     /**
-     * Crea un nuevo registro en la tabla `major`.
-     * @param array $data Los datos a insertar.
+     * Crea un nuevo registro en la tabla 'major'.
+     * @param array $data Datos a insertar.
      * @return int|bool El ID del nuevo registro o false si falla.
      */
     public function create($data)
@@ -27,18 +26,17 @@ class Major
         $columns = implode(', ', array_keys($data));
         $placeholders = ":" . implode(', :', array_keys($data));
         $query = "INSERT INTO " . $this->table_name . " ({$columns}) VALUES ({$placeholders})";
-        
+
         $stmt = $this->conn->prepare($query);
-        
-        // Uso de bindParam para enlazar variables de forma segura
+
         foreach ($data as $key => &$value) {
             $stmt->bindParam(":" . $key, $value);
         }
-        
+
         if ($stmt->execute()) {
             return $this->conn->lastInsertId();
         }
-        
+
         return false;
     }
 
@@ -56,44 +54,63 @@ class Major
     }
 
     /**
-     * Obtiene un registro por ID.
-     * @param int $id El ID del registro.
-     * @return array|bool Un array asociativo del registro o false si no se encuentra.
+     * Obtiene una carrera por su ID.
+     * @param int $id ID de la carrera.
+     * @return array|false
      */
     public function getById($id)
     {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE " . MajorEntity::ID . " = :id AND " . MajorEntity::DELETED_AT . " IS NULL LIMIT 1";
+        $query = "SELECT * FROM " . $this->table_name . " WHERE " . MajorEntity::ID . " = :id";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->bindParam(":id", $id);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     /**
-     * Actualiza un registro por ID.
-     * @param int $id El ID del registro a actualizar.
-     * @param array $data Los datos a actualizar.
-     * @return bool True si la actualización fue exitosa, false de lo contrario.
+     * Busca una carrera activa por su nombre para verificar unicidad.
+     * @param string $majorName Nombre de la carrera.
+     * @return array|false
+     */
+    public function findByName($majorName)
+    {
+        $query = "SELECT * FROM " . $this->table_name . 
+                 " WHERE " . MajorEntity::MAJOR_NAME . " = :major_name AND " . 
+                 MajorEntity::DELETED_AT . " IS NULL LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":major_name", $majorName);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Actualiza los datos de una carrera existente por su ID.
+     * @param int $id ID de la carrera a actualizar.
+     * @param array $data Los datos a modificar.
+     * @return bool True en éxito, false en fallo.
      */
     public function updateById($id, $data)
     {
         $setClauses = [];
-        // Se añade la marca de tiempo de actualización
         $data[MajorEntity::UPDATED_AT] = date('Y-m-d H:i:s');
         
         foreach ($data as $key => $value) {
             $setClauses[] = "{$key} = :{$key}";
         }
+
+        if (empty($setClauses)) {
+            return false;
+        }
+
         $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $setClauses) . " WHERE " . MajorEntity::ID . " = :id";
-        
+
         $stmt = $this->conn->prepare($query);
-        
-        // Uso de bindParam
+
         foreach ($data as $key => &$value) {
             $stmt->bindParam(":" . $key, $value);
         }
-        $stmt->bindParam(":id", $id, PDO::PARAM_INT);
-        
+        $stmt->bindParam(":id", $id);
+
         return $stmt->execute();
     }
     

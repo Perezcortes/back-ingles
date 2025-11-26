@@ -1,222 +1,196 @@
 <?php
+
 require_once __DIR__ . '/../models/Major.php';
+require_once __DIR__ . '/../responses/ResponseHandler.php'; 
+require_once __DIR__ . '/../entities/Major.php';
+
+use App\Entities\Major as MajorEntity;
 
 class MajorController
 {
-    // Para obtener todos los majors
-    public static function getAll()
-    {
-        try {
-            $majorModel = new Major();
-            $majors = $majorModel->obtenerTodos();
+    private $majorModel;
+    private $responseHandler;
 
-            http_response_code(200);
-            echo json_encode($majors);
-        } catch (Exception $e) {
-            self::sendError(500, "Error al obtener los registros de la tabla major.", $e);
-        }
+    public function __construct()
+    {
+        $this->majorModel = new Major();
+        $this->responseHandler = new ResponseHandler();
     }
 
-    // Obtener una carrera por ID
-    public static function getOne($id)
+    /**
+     * Crea una nueva carrera (Servicio 26).
+     * @param array $data Los datos a insertar.
+     * @return void
+     */
+    public function create($data)
     {
-        if (!is_numeric($id)) {
-            return self::sendError(400, "El id debe ser numérico.");
-        }
-
-        try {
-            $majorModel = new Major();
-            $major = $majorModel->obtenerPorId($id);
-
-            if ($major) {
-                http_response_code(200);
-                echo json_encode($major);
-            } else {
-                self::sendError(404, "Major no encontrado");
-            }
-        } catch (Exception $e) {
-            self::sendError(500, "Error al obtener el registro major", $e);
-        }
-    }
-
-    // Crear unanueva carrera
-    public static function create($data)
-    {
-        if (!isset($data['major_name']) || trim($data['major_name']) === '') {
-            http_response_code(400);
-            echo json_encode(["error" => "El campo 'major_name' es obligatorio"]);
+        if (!isset($data[MajorEntity::MAJOR_NAME]) || trim($data[MajorEntity::MAJOR_NAME]) === '') {
+            $this->responseHandler->sendFailure("El campo 'major_name' es obligatorio.", 400);
             return;
         }
 
-        if (!isset($data['description']) || trim($data['description']) === '') {
-            http_response_code(400);
-            echo json_encode(["error" => "El campo 'description' es obligatorio"]);
-            return;
-        }
-    
+        $majorName = trim($data[MajorEntity::MAJOR_NAME]);
+        $description = isset($data[MajorEntity::DESCRIPTION]) ? trim($data[MajorEntity::DESCRIPTION]) : null;
+
         try {
-            $majorModel = new Major();
-            $creado = $majorModel->crear($data);
-    
-            if ($creado) {
-                http_response_code(201);
-                echo json_encode([
-                    "message" => "Carrera creada exitosamente.",
-                    "major" => $data
-                ]);
-            } else {
-                self::sendError(500, "Error al crear un registro.");
+            if ($this->majorModel->findByName($majorName)) {
+                $this->responseHandler->sendFailure("Ya existe una carrera activa con el nombre '{$majorName}'.", 409);
+                return;
             }
+
+            $majorData = [
+                MajorEntity::MAJOR_NAME => $majorName,
+                MajorEntity::DESCRIPTION => $description,
+            ];
+            
+            $createdId = $this->majorModel->create($majorData);
+
+            if (!$createdId) {
+                $this->responseHandler->sendFailure("Error al crear la carrera en la base de datos.", 500);
+                return;
+            }
+
+            $newMajor = $this->majorModel->getById($createdId);
+            
+            $this->responseHandler->sendSuccess(["major" => $newMajor], "Carrera creada exitosamente.", 201);
+
         } catch (Exception $e) {
-            self::sendError(500, "Error al crear un registro.", $e);
+            $this->responseHandler->sendFailure("Error en el proceso de creación de la carrera. Revisar logs.", 500, $e);
         }
     }
 
-    // Actualizar una carrera
-    public static function update($id, $data)
+    /**
+     * Obtiene todas las carreras activas (Servicio 27).
+     * @return void
+     */
+    public function getAll()
     {
-        if (!is_numeric($id)) {
-            return self::sendError(400, "El id debe ser numérico.");
+        try {
+            $majors = $this->majorModel->getAll();
+            
+            $this->responseHandler->sendSuccess(["majors" => $majors], "Carreras encontradas exitosamente.");
+
+        } catch (Exception $e) {
+            $this->responseHandler->sendFailure("Error al obtener las carreras. Revisar logs.", 500, $e);
+        }
+    }
+
+    /**
+     * Obtiene una carrera por su ID (Servicio 28).
+     * @param int $id ID de la carrera.
+     * @return void
+     */
+    public function getOneById($id)
+    {
+        if (!is_numeric($id) || (int)$id <= 0) {
+            $this->responseHandler->sendFailure("El ID debe ser un número entero positivo.", 400);
+            return;
+        }
+
+        try {
+            $major = $this->majorModel->getById($id);
+
+            if (!$major || $major[MajorEntity::DELETED_AT] !== null) {
+                $this->responseHandler->sendFailure("Carrera no encontrada.", 404);
+                return;
+            }
+
+            $this->responseHandler->sendSuccess(["major" => $major], "Carrera encontrada exitosamente.");
+
+        } catch (Exception $e) {
+            $this->responseHandler->sendFailure("Error al obtener la carrera. Revisar logs.", 500, $e);
+        }
+    }
+
+    /**
+     * Actualiza los datos de una carrera existente (Servicio 29).
+     * @param int $id ID de la carrera a actualizar.
+     * @param array $data Los datos a modificar.
+     * @return void
+     */
+    public function update($id, $data)
+    {
+        if (!is_numeric($id) || (int)$id <= 0) {
+            $this->responseHandler->sendFailure("El ID debe ser un número entero positivo.", 400);
+            return;
         }
 
         if (empty($data)) {
-            return self::sendError(400, "Se requiere al menos un campo para actualizar la carrera.");
+            $this->responseHandler->sendFailure("Se requiere al menos un campo para actualizar la carrera.", 400);
+            return;
         }
 
         try {
-            $majorModel = new Major();
-            $majorExistente = $majorModel->obtenerPorId($id);
-
-            if (!$majorExistente) {
-                return self::sendError(404, "No se encontró la carrera con id: $id");
+            $existingMajor = $this->majorModel->getById($id);
+            if (!$existingMajor || $existingMajor[MajorEntity::DELETED_AT] !== null) {
+                $this->responseHandler->sendFailure("Carrera no encontrada.", 404);
+                return;
             }
 
-            $actualizado = $majorModel->actualizarPorId($id, $data);
+            $majorName = isset($data[MajorEntity::MAJOR_NAME]) ? trim($data[MajorEntity::MAJOR_NAME]) : null;
+            $description = isset($data[MajorEntity::DESCRIPTION]) ? trim($data[MajorEntity::DESCRIPTION]) : null;
 
-            if ($actualizado) {
-                $majorActualizado = $majorModel->obtenerPorId($id);
-
-                http_response_code(200);
-                echo json_encode([
-                    "message" => "Carrera actualizada exitosamente",
-                    "major" => $majorActualizado
-                ]);
-            } else {
-                self::sendError(500, "Error interno al intentar actualizar la carrera.");
+            if (array_key_exists(MajorEntity::MAJOR_NAME, $data) && $majorName !== $existingMajor[MajorEntity::MAJOR_NAME]) {
+                if ($majorName !== null && $majorName !== '' && $this->majorModel->findByName($majorName)) {
+                    $this->responseHandler->sendFailure("Ya existe una carrera activa con el nombre '{$majorName}'.", 409);
+                    return;
+                }
             }
+
+            $updateData = [];
+            if (array_key_exists(MajorEntity::MAJOR_NAME, $data)) {
+                $updateData[MajorEntity::MAJOR_NAME] = $majorName;
+            }
+            if (array_key_exists(MajorEntity::DESCRIPTION, $data)) {
+                $updateData[MajorEntity::DESCRIPTION] = $description;
+            }
+
+            if (empty($updateData)) {
+                 $this->responseHandler->sendSuccess(["major" => $existingMajor], "Carrera actualizada exitosamente (no se detectaron cambios).");
+                 return;
+            }
+
+            $this->majorModel->updateById($id, $updateData);
+            
+            $updatedMajor = $this->majorModel->getById($id);
+            
+            $this->responseHandler->sendSuccess(["major" => $updatedMajor], "Carrera actualizada exitosamente.");
+
         } catch (Exception $e) {
-            self::sendError(500, "Error al actualizar la carrera", $e);
+            $this->responseHandler->sendFailure("Error al actualizar la carrera. Revisar logs.", 500, $e);
         }
     }
 
-    // Eliminar un major (Soft Delete)
-    public static function deleteOne($id)
+    /**
+     * Realiza un borrado lógico (soft delete) de una carrera (Servicio 30).
+     * @param int $id ID de la carrera a eliminar.
+     * @return void
+     */
+    public function deleteOne($id)
     {
-        if (!is_numeric($id)) {
-            return self::sendError(400, "El id debe ser numérico.");
+        if (!is_numeric($id) || (int)$id <= 0) {
+            $this->responseHandler->sendFailure("El ID debe ser un número entero positivo.", 400);
+            return;
         }
 
         try {
-            $majorModel = new Major();
-
-            $major = $majorModel->obtenerPorId($id);
-            if (!$major) {
-                return self::sendError(404, "No se encontró la carrera con id: $id");
+            $existingMajor = $this->majorModel->getById($id);
+            if (!$existingMajor) {
+                $this->responseHandler->sendFailure("No se encontró la carrera con id: $id", 404);
+                return;
             }
 
-            // eliminarlo (Soft Delete)
-            $eliminado = $majorModel->eliminarPorId($id);
+            $deleted = $this->majorModel->deleteById($id);
 
-            if ($eliminado) {
-                http_response_code(200);
-                echo json_encode([
-                    "message" => "Carrera eliminada exitosamente.",
-                    "major" => $major
-                ]);
+            if ($deleted) {
+                $deletedMajor = $this->majorModel->getById($id);
+                $this->responseHandler->sendSuccess(["major" => $deletedMajor], "Carrera eliminada exitosamente.");
             } else {
-                self::sendError(500, "Error interno al intentar eliminar la carrera.");
+                $this->responseHandler->sendFailure("Error interno al intentar eliminar la carrera.", 500);
             }
+
         } catch (Exception $e) {
-            self::sendError(500, "Error al eliminar la carrera.", $e);
+            $this->responseHandler->sendFailure("Error al eliminar la carrera. Revisar logs.", 500, $e);
         }
-    }
-
-    // Restaurar un major (desmarcar como eliminado)
-    public static function restore($id)
-    {
-        if (!is_numeric($id)) {
-            return self::sendError(400, "El id debe ser numérico.");
-        }
-
-        try {
-            $majorModel = new Major();
-
-            //obtener el registro antes de restaurar
-            $major = $majorModel->obtenerPorId($id);
-            if (!$major) {
-                return self::sendError(404, "No se encontró el major con id: $id");
-            }
-
-            //restaurarlo
-            $restaurado = $majorModel->restaurarPorId($id);
-
-            if ($restaurado) {
-                http_response_code(200);
-                echo json_encode([
-                    "message" => "Carrera restaurada exitosamente.",
-                    "major" => $major
-                ]);
-            } else {
-                self::sendError(500, "Error interno al intentar restaurar la carrera.");
-            }
-        } catch (Exception $e) {
-            self::sendError(500, "Error al restaurar el major.", $e);
-        }
-    }
-
-    // Eliminar un major permanentemente (Hard Delete)
-    public static function deletePermanent($id)
-    {
-        if (!is_numeric($id)) {
-            return self::sendError(400, "El id debe ser numérico.");
-        }
-
-        try {
-            $majorModel = new Major();
-
-            //obtener el registro antes de eliminar permanentemente
-            $major = $majorModel->obtenerPorId($id);
-            if (!$major) {
-                return self::sendError(404, "No se encontró la carrera con id: $id");
-            }
-
-            //eliminarlo permanentemente
-            $eliminadoPermanente = $majorModel->eliminarPermanentePorId($id);
-
-            if ($eliminadoPermanente) {
-                http_response_code(200);
-                echo json_encode([
-                    "message" => "Carrera eliminada permanentemente.",
-                    "major" => $major
-                ]);
-            } else {
-                self::sendError(500, "Error interno al intentar eliminar permanentemente la carrera.");
-            }
-        } catch (Exception $e) {
-            self::sendError(500, "Error al eliminar permanentemente la carrera.", $e);
-        }
-    }
-
-    // Helper para las respuestas de error
-    private static function sendError($code, $message, $exception = null)
-    {
-        http_response_code($code);
-        $response = ["error" => $message];
-
-        if (getenv('APP_ENV') === 'development' && $exception) {
-            $response["details"] = $exception->getMessage();
-        }
-
-        echo json_encode($response);
     }
 }
