@@ -8,6 +8,7 @@ require_once 'controllers/auth/student/StudentLoginController.php';
 require_once 'controllers/auth/user/UserLoginController.php';
 require_once 'middlewares/SessionValidator.php';
 require_once 'controllers/MajorController.php';
+require_once 'controllers/PartialController.php';
 require_once 'controllers/EnglishClassController.php'; // Renombrado a EnglishClassController antes EnglishGroupController
 
 
@@ -69,6 +70,13 @@ Route::put('/api/v1/major/update/{id}', [MajorController::class, 'update'], [Ses
 Route::delete('/api/v1/major/deleteOne/{id}', [MajorController::class, 'deleteOne'], [SessionValidator::class, 'hasActiveSession']);
 Route::post('/api/v1/major/restore/{id}', [MajorController::class, 'restore']); // Ruta para restaurar un major
 Route::delete('/api/v1/major/deletePermanent/{id}', [MajorController::class, 'deletePermanent']); // Ruta para eliminar permanentemente un major
+
+// Rutas para Partial con parámetros dinámicos
+Route::post('/api/v1/partial/create', [PartialController::class, 'create'], [SessionValidator::class, 'hasActiveSession']);
+Route::get('/api/v1/partial/getAll', [PartialController::class, 'getAll'], [SessionValidator::class, 'hasActiveSession']);
+Route::get('/api/v1/partial/getOne/{id}', [PartialController::class, 'getOneById'], [SessionValidator::class, 'hasActiveSession']);
+Route::put('/api/v1/partial/update/{id}', [PartialController::class, 'update'], [SessionValidator::class, 'hasActiveSession']);
+Route::delete('/api/v1/partial/deleteOne/{id}', [PartialController::class, 'deleteOne'], [SessionValidator::class, 'hasActiveSession']);
 
 // Rutas para EnglishGroup con parámetros dinámicos
 Route::post('/api/v1/english-group/create', [EnglishGroupController::class, 'create']);
