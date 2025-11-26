@@ -19,8 +19,8 @@ class EnglishClass
     }
     
     /**
-     * Crea un nuevo registro en la tabla `english_class`.
-     * @param array $data Los datos a insertar.
+     * Crea un nuevo registro en la tabla 'english_class'.
+     * @param array $data Datos a insertar.
      * @return int|bool El ID del nuevo registro o false si falla.
      */
     public function create($data)
@@ -28,22 +28,23 @@ class EnglishClass
         $columns = implode(', ', array_keys($data));
         $placeholders = ":" . implode(', :', array_keys($data));
         $query = "INSERT INTO " . $this->table_name . " ({$columns}) VALUES ({$placeholders})";
-        
+
         $stmt = $this->conn->prepare($query);
-        
+
         foreach ($data as $key => &$value) {
             $stmt->bindParam(":" . $key, $value);
         }
-        
+
         if ($stmt->execute()) {
-            return $this->conn->lastInsertId(); // <-- Devolvemos el ID
+            return $this->conn->lastInsertId();
         }
-        
+
         return false;
     }
 
     /**
-     * Obtiene todos los registros no eliminados lógicamente.
+     * Obtiene todas las clases de inglés activas (no eliminadas lógicamente).
+     * @return array Un array de objetos o un array vacío.
      */
     public function getAll()
     {
@@ -54,13 +55,31 @@ class EnglishClass
     }
 
     /**
-     * Obtiene un registro por ID.
+     * Obtiene una clase por su ID.
+     * @param int $id ID de la clase.
+     * @return array|false
      */
     public function getById($id)
     {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE " . EnglishClassEntity::ID . " = :id AND " . EnglishClassEntity::DELETED_AT . " IS NULL LIMIT 1";
+        $query = "SELECT * FROM " . $this->table_name . " WHERE " . EnglishClassEntity::ID . " = :id";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->bindParam(":id", $id);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Busca una clase activa por su nombre de grupo (para evitar duplicados).
+     * @param string $nameGroup Nombre del grupo.
+     * @return array|false
+     */
+    public function findByName($nameGroup)
+    {
+        $query = "SELECT * FROM " . $this->table_name . 
+                 " WHERE " . EnglishClassEntity::NAME_GROUP . " = :name_group AND " . 
+                 EnglishClassEntity::DELETED_AT . " IS NULL LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":name_group", $nameGroup);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -90,67 +109,52 @@ class EnglishClass
     }
 
     /**
-     * Actualiza un registro por ID.
+     * Actualiza los datos de una clase existente por su ID.
+     * @param int $id ID de la clase a actualizar.
+     * @param array $data Los datos a modificar.
+     * @return bool True en éxito, false en fallo.
      */
     public function updateById($id, $data)
     {
         $setClauses = [];
+        // Añadir la marca de tiempo de actualización
         $data[EnglishClassEntity::UPDATED_AT] = date('Y-m-d H:i:s');
+        
         foreach ($data as $key => $value) {
+            // Construye la parte SET de la consulta (ej: name_group = :name_group)
             $setClauses[] = "{$key} = :{$key}";
         }
+
+        if (empty($setClauses)) {
+            return false; // No hay nada que actualizar
+        }
+
+        // Construye la consulta SQL completa
         $query = "UPDATE " . $this->table_name . " SET " . implode(', ', $setClauses) . " WHERE " . EnglishClassEntity::ID . " = :id";
-        
+
         $stmt = $this->conn->prepare($query);
-        
+
+        // Asigna los valores a los parámetros
         foreach ($data as $key => &$value) {
             $stmt->bindParam(":" . $key, $value);
         }
+        // Asigna el ID
         $stmt->bindParam(":id", $id);
-        
+
         return $stmt->execute();
     }
 
+    
     /**
-     * Restaura un registro por ID (soft delete).
-     */
-    public function restoreById($id)
-    {
-        $query = "UPDATE " . $this->table_name . " SET " . EnglishClassEntity::DELETED_AT . " = NULL WHERE " . EnglishClassEntity::ID . " = :id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-        return $stmt->execute();
-    }
-
-    /**
-     * Realiza un borrado lógico de un registro.
+     * Realiza el borrado lógico (soft delete) de una clase.
+     * @param int $id ID de la clase a eliminar.
+     * @return bool True en éxito, false en fallo.
      */
     public function deleteById($id)
     {
         $query = "UPDATE " . $this->table_name . " SET " . EnglishClassEntity::DELETED_AT . " = NOW() WHERE " . EnglishClassEntity::ID . " = :id";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-        return $stmt->execute();
-    }
-
-    /**
-     * Elimina un registro permanentemente.
-     */
-    public function deletePermanentById($id)
-    {
-        $query = "DELETE FROM " . $this->table_name . " WHERE " . EnglishClassEntity::ID . " = :id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-        return $stmt->execute();
-    }
-
-    /**
-     * Vacía la tabla.
-     */
-    public function truncateTable()
-    {
-        $query = "TRUNCATE TABLE " . $this->table_name;
-        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":id", $id);
         return $stmt->execute();
     }
     

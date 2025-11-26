@@ -52,13 +52,13 @@ Route::delete('/api/v1/user/deleteAll', [UserController::class, 'deleteAll'], [S
 
 
 // Rutas para EnglishClass con parámetros dinámicos 
-Route::post('/api/v1/englishClass/create', [EnglishClassController::class, 'create']); // Antes EnglishGroupController
-Route::get('/api/v1/englishClass/getOne/{id}', [EnglishClassController::class, 'getOne']);
+Route::post('/api/v1/englishClass/create', [EnglishClassController::class, 'create'], [SessionValidator::class, 'hasActiveSession']);
+Route::get('/api/v1/englishClass/getOne/{id}', [EnglishClassController::class, 'getOneById'], [SessionValidator::class, 'hasActiveSession']);
 Route::get('/api/v1/englishClass/getByProfessor/{id_professor}', [EnglishClassController::class, 'getByProfessor']);
 Route::get('/api/v1/englishClass/getByLevel/{id_level}', [EnglishClassController::class, 'getByLevel']);
-Route::get('/api/v1/englishClass/getAll', [EnglishClassController::class, 'getAll']);
-Route::put('/api/v1/englishClass/update/{id}', [EnglishClassController::class, 'update']);
-Route::delete('/api/v1/englishClass/deleteOne/{id}', [EnglishClassController::class, 'deleteOne']);
+Route::get('/api/v1/englishClass/getAll', [EnglishClassController::class, 'getAll'], [SessionValidator::class, 'hasActiveSession']);
+Route::put('/api/v1/englishClass/update/{id}', [EnglishClassController::class, 'update'], [SessionValidator::class, 'hasActiveSession']);
+Route::delete('/api/v1/englishClass/deleteOne/{id}', [EnglishClassController::class, 'deleteOne'], [SessionValidator::class, 'hasActiveSession']);
 Route::post('/api/v1/englishClass/restore/{id}', [EnglishClassController::class, 'restore']); // Para restaurar un grupo
 Route::delete('/api/v1/englishClass/deletePermanent/{id}', [EnglishClassController::class, 'deletePermanent']); // Eliminar permanentemente
 
