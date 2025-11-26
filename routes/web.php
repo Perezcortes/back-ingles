@@ -9,6 +9,7 @@ require_once 'controllers/auth/user/UserLoginController.php';
 require_once 'middlewares/SessionValidator.php';
 require_once 'controllers/MajorController.php';
 require_once 'controllers/PartialController.php';
+require_once 'controllers/QuestionTypeController.php'; 
 require_once 'controllers/EnglishClassController.php'; // Renombrado a EnglishClassController antes EnglishGroupController
 
 
@@ -61,6 +62,13 @@ Route::put('/api/v1/englishClass/update/{id}', [EnglishClassController::class, '
 Route::delete('/api/v1/englishClass/deleteOne/{id}', [EnglishClassController::class, 'deleteOne'], [SessionValidator::class, 'hasActiveSession']);
 Route::post('/api/v1/englishClass/restore/{id}', [EnglishClassController::class, 'restore']); // Para restaurar un grupo
 Route::delete('/api/v1/englishClass/deletePermanent/{id}', [EnglishClassController::class, 'deletePermanent']); // Eliminar permanentemente
+
+// Rutas para QuestionType con parámetros dinámicos
+Route::post('/api/v1/questionType/create', [QuestionTypeController::class, 'create'], [SessionValidator::class, 'hasActiveSession']);
+Route::get('/api/v1/questionType/getAll', [QuestionTypeController::class, 'getAll'], [SessionValidator::class, 'hasActiveSession']);
+Route::get('/api/v1/questionType/getOne/{id}', [QuestionTypeController::class, 'getOneById'], [SessionValidator::class, 'hasActiveSession']);
+Route::put('/api/v1/questionType/update/{id}', [QuestionTypeController::class, 'update'], [SessionValidator::class, 'hasActiveSession']);
+Route::delete('/api/v1/questionType/deleteOne/{id}', [QuestionTypeController::class, 'deleteOne'], [SessionValidator::class, 'hasActiveSession']);
 
 // Rutas para Major con parámetros dinámicos
 Route::post('/api/v1/major/create', [MajorController::class, 'create'], [SessionValidator::class, 'hasActiveSession']);
